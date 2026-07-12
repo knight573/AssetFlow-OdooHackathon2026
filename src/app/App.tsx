@@ -12,7 +12,7 @@ import { DemoSimulator } from '../components/DemoSimulator';
 import { OrgSetup } from '../features/organization/OrgSetup';
 import { Login } from '../features/organization/Login';
 import { getMockData, setMockData } from '../lib/mockDb';
-import { Asset, Booking, MaintenanceRequest, Notification, ActivityLog, Allocation, TransferRequest, Profile } from '../lib/types';
+import { Asset, Booking, MaintenanceRequest, Notification, ActivityLog, Allocation, TransferRequest, Profile, Department } from '../lib/types';
 import { ClipboardCheck, TrendingUp, History, Terminal, Landmark, ArrowLeft, ArrowRight } from 'lucide-react';
 import { 
   LayoutDashboard, Wrench, CalendarDays, ShieldCheck, 
@@ -650,34 +650,121 @@ export const App: React.FC = () => {
                 </div>
               </div>
 
-              {/* Quick Actions Bar */}
-              <div className="glass-panel rounded-2xl p-5 border border-slate-900 space-y-3.5">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-350">Quick Actions</h3>
-                <div className="flex flex-wrap gap-4">
-                  <button 
-                    onClick={() => {
-                      if (role === 'admin' || role === 'asset_manager') {
-                        navigateToTab('directory');
-                      } else {
-                        alert('Only Admin or Asset Managers can register assets.');
-                      }
-                    }}
-                    className="flex-1 min-w-[200px] flex items-center justify-center gap-2 py-3 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-semibold transition shadow-md shadow-indigo-600/10 cursor-pointer"
-                  >
-                    + Register New Asset
-                  </button>
-                  <button 
-                    onClick={() => navigateToTab('booking')}
-                    className="flex-1 min-w-[200px] flex items-center justify-center gap-2 py-3 px-4 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-xl text-sm font-semibold text-slate-200 transition cursor-pointer"
-                  >
-                    📅 Book Shared Resource
-                  </button>
-                  <button 
-                    onClick={() => navigateToTab('maintenance')}
-                    className="flex-1 min-w-[200px] flex items-center justify-center gap-2 py-3 px-4 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-xl text-sm font-semibold text-slate-200 transition cursor-pointer"
-                  >
-                    🔧 Raise Maintenance Request
-                  </button>
+              {/* All-in-One Operations Console (replaces Quick Actions) */}
+              <div className="glass-panel rounded-2xl p-6 border border-slate-900 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-900 pb-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                      <Landmark className="w-5 h-5 text-indigo-400" />
+                      All-in-One Operations Console
+                    </h3>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Live status feed of bookings, maintenance repairs, and allocations across all departments.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  
+                  {/* Column 1: Active Resource Bookings */}
+                  <div className="space-y-3">
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                      📅 Active Bookings ({getMockData<Booking>('bookings').filter(b => b.status !== 'cancelled').length})
+                    </span>
+                    <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                      {getMockData<Booking>('bookings').filter(b => b.status !== 'cancelled').length === 0 ? (
+                        <p className="text-xs text-slate-600 italic py-2">No active bookings.</p>
+                      ) : (
+                        getMockData<Booking>('bookings')
+                          .filter(b => b.status !== 'cancelled')
+                          .map((b: any) => {
+                            const res = getMockData<Asset>('assets').find(a => a.id === b.resource_asset_id);
+                            const booker = getMockData<Profile>('profiles').find(p => p.id === b.booked_by);
+                            return (
+                              <div key={b.id} className="p-2.5 bg-slate-950/40 border border-slate-900 rounded-xl text-xs space-y-1">
+                                <div className="flex justify-between items-center">
+                                  <span className="font-bold text-slate-200 truncate">{b.purpose}</span>
+                                  <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-400 font-extrabold">{b.status}</span>
+                                </div>
+                                <p className="text-[10px] text-slate-500">
+                                  {res?.name || 'Resource'} · By {booker?.name || 'Employee'}
+                                </p>
+                              </div>
+                            );
+                          })
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Column 2: Active Maintenance Repairs */}
+                  <div className="space-y-3">
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                      🔧 Active Repairs ({getMockData<MaintenanceRequest>('maintenance_requests').filter(r => r.status !== 'resolved' && r.status !== 'rejected').length})
+                    </span>
+                    <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                      {getMockData<MaintenanceRequest>('maintenance_requests').filter(r => r.status !== 'resolved' && r.status !== 'rejected').length === 0 ? (
+                        <p className="text-xs text-slate-600 italic py-2">No pending repairs.</p>
+                      ) : (
+                        getMockData<MaintenanceRequest>('maintenance_requests')
+                          .filter(r => r.status !== 'resolved' && r.status !== 'rejected')
+                          .map((r: any) => {
+                            const asset = getMockData<Asset>('assets').find(a => a.id === r.asset_id);
+                            const isHigh = r.priority === 'high';
+                            return (
+                              <div key={r.id} className="p-2.5 bg-slate-950/40 border border-slate-900 rounded-xl text-xs space-y-1">
+                                <div className="flex justify-between items-center">
+                                  <span className="font-bold text-slate-200 truncate">{asset?.name || 'Asset'}</span>
+                                  <span className={`text-[8px] font-extrabold px-1.5 py-0.2 rounded ${
+                                    isHigh ? 'bg-rose-950 text-rose-400' : 'bg-amber-950 text-amber-400'
+                                  }`}>
+                                    {r.priority.toUpperCase()}
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-slate-500 line-clamp-1">{r.issue_description}</p>
+                                <span className="text-[9px] font-semibold text-indigo-400">Status: {r.status.replace('_', ' ')}</span>
+                              </div>
+                            );
+                          })
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Column 3: Active Allocations */}
+                  <div className="space-y-3">
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                      📦 Active Allocations ({getMockData<Allocation>('allocations').filter(a => !a.returned_at).length})
+                    </span>
+                    <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                      {getMockData<Allocation>('allocations').filter(a => !a.returned_at).length === 0 ? (
+                        <p className="text-xs text-slate-600 italic py-2">No active allocations.</p>
+                      ) : (
+                        getMockData<Allocation>('allocations')
+                          .filter(a => !a.returned_at)
+                          .map((a: any) => {
+                            const asset = getMockData<Asset>('assets').find(item => item.id === a.asset_id);
+                            const emp = getMockData<Profile>('profiles').find(p => p.id === a.employee_id);
+                            const dep = getMockData<Department>('departments').find(d => d.id === a.department_id);
+                            const isOverdue = a.status === 'overdue';
+                            return (
+                              <div key={a.id} className="p-2.5 bg-slate-950/40 border border-slate-900 rounded-xl text-xs space-y-1">
+                                <div className="flex justify-between items-center">
+                                  <span className="font-bold text-slate-200 truncate">{asset?.name || 'Asset'}</span>
+                                  <span className={`text-[8px] font-extrabold px-1.5 py-0.2 rounded ${
+                                    isOverdue ? 'bg-rose-950 text-rose-400 animate-pulse' : 'bg-slate-800 text-slate-400'
+                                  }`}>
+                                    {isOverdue ? 'OVERDUE' : 'ACTIVE'}
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-slate-550">
+                                  Assigned to: {emp?.name || dep?.name || 'Staff'}
+                                </p>
+                              </div>
+                            );
+                          })
+                      )}
+                    </div>
+                  </div>
+
                 </div>
               </div>
 
