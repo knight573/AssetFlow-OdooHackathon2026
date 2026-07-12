@@ -469,7 +469,7 @@ export const App: React.FC = () => {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         
         {/* Top Header navbar */}
-        <header className="h-16 border-b border-slate-900 bg-slate-950/20 backdrop-blur-md px-6 flex items-center justify-between shrink-0">
+        <header className="relative z-50 h-16 border-b border-slate-900 bg-slate-950/20 backdrop-blur-md px-6 flex items-center justify-between shrink-0">
           
           <div className="flex items-center gap-4">
             {/* History Navigation Buttons */}
