@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../lib/auth';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { getMockData, setMockData } from '../../lib/mockDb';
 import { Profile, Department, UserRole } from '../../lib/types';
 import { Boxes, Mail, UserPlus, LogIn, Sparkles, CheckCircle2, Lock, HelpCircle, Shield, User, Info, Settings, Plus, ToggleLeft, ToggleRight, UserCheck, ArrowRight, KeyRound } from 'lucide-react';
@@ -202,6 +203,16 @@ export const Login: React.FC = () => {
     const list = getMockData<Profile>('profiles');
     const updated = list.map(p => p.email.toLowerCase() === email.trim().toLowerCase() ? { ...p, password: newPassword } : p);
     setMockData('profiles', updated);
+
+    // If Supabase is configured, update the password in Supabase Auth & underlying profiles table
+    if (isSupabaseConfigured) {
+      supabase.auth.updateUser({ password: newPassword }).catch(err => {
+        console.error("Supabase Auth password update error:", err);
+      });
+      supabase.from('profiles').update({ password: newPassword }).eq('email', email.trim().toLowerCase()).catch(err => {
+        console.error("Supabase database profiles update error:", err);
+      });
+    }
 
     // Reset recovery state and redirect
     setOtpSent(false);

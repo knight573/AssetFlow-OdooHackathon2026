@@ -130,8 +130,6 @@ const INITIAL_AUDIT_ITEMS: AuditItem[] = [
 
 export function initMockDb(force = false) {
   if (!force && localStorage.getItem('assetflow_init') === 'true') {
-    // Clear and force-reinitialize profiles so the 5 core users always load with password123
-    localStorage.setItem('assetflow_profiles', JSON.stringify(INITIAL_PROFILES));
     return;
   }
 
