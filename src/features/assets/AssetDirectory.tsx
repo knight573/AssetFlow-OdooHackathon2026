@@ -37,6 +37,7 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState('');
   const [showFilters, setShowFilters] = useState(false);
 
   // New Asset Form States
@@ -50,6 +51,7 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
   const [newAssetCost, setNewAssetCost] = useState('');
   const [newAssetAcquisitionDate, setNewAssetAcquisitionDate] = useState(new Date().toISOString().split('T')[0]);
   const [newAssetPhotoUrl, setNewAssetPhotoUrl] = useState('');
+  const [newAssetLocation, setNewAssetLocation] = useState('');
   const [formError, setFormError] = useState('');
 
   // Expand Asset Log History
@@ -123,6 +125,7 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
       acquisition_date: newAssetAcquisitionDate || null,
       photo_url: newAssetPhotoUrl.trim() || null,
       image_url: newAssetPhotoUrl.trim() || undefined,
+      location: newAssetLocation.trim() || null,
       created_at: new Date().toISOString()
     };
 
@@ -141,7 +144,8 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
         asset_tag: newAsset.tag,
         asset_name: newAsset.name,
         category: categories.find(c => c.id === newAsset.category_id)?.name || 'Unknown',
-        cost: newAsset.acquisition_cost
+        cost: newAsset.acquisition_cost,
+        location: newAsset.location
       }
     });
 
@@ -155,6 +159,7 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
     setNewAssetCost('');
     setNewAssetAcquisitionDate(new Date().toISOString().split('T')[0]);
     setNewAssetPhotoUrl('');
+    setNewAssetLocation('');
     setShowRegisterPanel(false);
     loadData();
   };
@@ -221,14 +226,16 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
     const categoryMatch = !selectedCategory || asset.category_id === selectedCategory;
     const departmentMatch = !selectedDepartment || asset.department_id === selectedDepartment;
     const statusMatch = !selectedStatus || asset.status === selectedStatus;
+    const locationMatch = !selectedLocation || (asset.location && asset.location.toLowerCase().includes(selectedLocation.toLowerCase()));
     
     const searchLower = searchQuery.toLowerCase();
     const searchMatch = !searchQuery || 
       asset.name.toLowerCase().includes(searchLower) ||
       asset.tag.toLowerCase().includes(searchLower) ||
-      (asset.serial_number && asset.serial_number.toLowerCase().includes(searchLower));
+      (asset.serial_number && asset.serial_number.toLowerCase().includes(searchLower)) ||
+      (asset.location && asset.location.toLowerCase().includes(searchLower));
 
-    return categoryMatch && departmentMatch && statusMatch && searchMatch;
+    return categoryMatch && departmentMatch && statusMatch && locationMatch && searchMatch;
   });
 
   // Style helper mapping for asset categories
@@ -422,15 +429,29 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5">Asset Image URL</label>
-                <input
-                  type="url"
-                  placeholder="e.g. https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=120"
-                  value={newAssetPhotoUrl}
-                  onChange={(e) => setNewAssetPhotoUrl(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-brand-500 transition-colors"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5">Location / Room *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Headquarters, Room 204"
+                    value={newAssetLocation}
+                    onChange={(e) => setNewAssetLocation(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-brand-500 transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5">Asset Image URL</label>
+                  <input
+                    type="url"
+                    placeholder="e.g. https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=120"
+                    value={newAssetPhotoUrl}
+                    onChange={(e) => setNewAssetPhotoUrl(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-brand-500 transition-colors"
+                  />
+                </div>
               </div>
 
               <div className="pt-2">
@@ -500,13 +521,14 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
               )}
             </button>
 
-            {(searchQuery || selectedCategory || selectedDepartment || selectedStatus) && (
+            {(searchQuery || selectedCategory || selectedDepartment || selectedStatus || selectedLocation) && (
               <button
                 onClick={() => {
                   setSearchQuery('');
                   setSelectedCategory('');
                   setSelectedDepartment('');
                   setSelectedStatus('');
+                  setSelectedLocation('');
                 }}
                 className="text-xs font-bold text-slate-500 hover:text-slate-300 px-2.5 py-2"
               >
@@ -518,7 +540,7 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
 
         {/* Expandable Advanced Filters Panel */}
         {showFilters && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-3 border-t border-slate-850 animate-slide-down">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-3 border-t border-slate-850 animate-slide-down">
             <div>
               <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Filter by Category</label>
               <select
@@ -560,7 +582,19 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
                 <option value="under_maintenance">Under Maintenance</option>
                 <option value="lost">Lost</option>
                 <option value="retired">Retired</option>
+                <option value="disposed">Disposed</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Filter by Location</label>
+              <input
+                type="text"
+                placeholder="e.g. Floor 2, HQ"
+                value={selectedLocation}
+                onChange={(e) => setSelectedLocation(e.target.value)}
+                className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-850 text-xs text-slate-300 focus:outline-none focus:border-brand-500"
+              />
             </div>
           </div>
         )}
@@ -760,6 +794,11 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
                                   {asset.acquisition_date && (
                                     <p className="text-[10px] text-slate-500">
                                       Acquired: {new Date(asset.acquisition_date).toLocaleDateString()}
+                                    </p>
+                                  )}
+                                  {asset.location && (
+                                    <p className="text-[10px] text-slate-400 font-medium pt-1">
+                                      Location: <span className="text-slate-300 font-semibold">{asset.location}</span>
                                     </p>
                                   )}
                                 </div>
