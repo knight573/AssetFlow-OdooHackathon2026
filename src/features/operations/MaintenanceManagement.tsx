@@ -195,12 +195,12 @@ export const MaintenanceManagement: React.FC = () => {
               className={`flex flex-col shrink-0 w-[270px] h-[650px] rounded-2xl border p-4 bg-slate-950/20 ${column.color}`}
             >
               {/* Header */}
-              <div className="flex items-center justify-between pb-3 border-b border-slate-900 mb-4">
-                <div className="flex items-center gap-2">
-                  <span className={`w-2.5 h-2.5 rounded-full ${column.dot}`} />
-                  <h3 className="font-bold text-sm text-slate-200">{column.title}</h3>
+              <div className="flex items-start justify-between pb-3 border-b border-slate-900 mb-4">
+                <div className="flex items-start gap-2 pt-0.5 min-w-0">
+                  <span className={`w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 ${column.dot}`} />
+                  <h3 className="font-bold text-sm text-slate-200 leading-snug break-words">{column.title}</h3>
                 </div>
-                <span className="text-xs font-bold text-slate-500 bg-slate-900 px-2 py-0.5 rounded-md">
+                <span className="flex items-center justify-center shrink-0 w-5.5 h-5.5 rounded-full bg-slate-900/60 border border-slate-800 text-[10px] font-extrabold text-slate-400 shadow-sm ml-2">
                   {columnRequests.length}
                 </span>
               </div>
