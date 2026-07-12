@@ -12,7 +12,7 @@ import { DemoSimulator } from '../components/DemoSimulator';
 import { OrgSetup } from '../features/organization/OrgSetup';
 import { Login } from '../features/organization/Login';
 import { getMockData } from '../lib/mockDb';
-import { Asset, Booking, MaintenanceRequest, Notification, ActivityLog, Allocation } from '../lib/types';
+import { Asset, Booking, MaintenanceRequest, Notification, ActivityLog, Allocation, TransferRequest } from '../lib/types';
 import { ClipboardCheck, TrendingUp, History, Terminal, Landmark } from 'lucide-react';
 import { 
   LayoutDashboard, Wrench, CalendarDays, ShieldCheck, 
@@ -29,6 +29,7 @@ export const App: React.FC = () => {
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
+  const [transfers, setTransfers] = useState<TransferRequest[]>([]);
 
   // Preselected parameters for linking tabs between Directory and Allocations (P2 feature integration)
   const [preselectAssetId, setPreselectAssetId] = useState<string | undefined>(undefined);
@@ -51,10 +52,12 @@ export const App: React.FC = () => {
     const aList = getMockData<ActivityLog>('activity_logs');
     const assetList = getMockData<Asset>('assets');
     const allocationList = getMockData<Allocation>('allocations');
+    const transferList = getMockData<TransferRequest>('transfer_requests') || [];
     setNotifications(nList);
     setActivities(aList);
     setAssets(assetList);
     setAllocations(allocationList);
+    setTransfers(transferList);
   };
 
   useEffect(() => {
@@ -92,6 +95,15 @@ export const App: React.FC = () => {
     today.setHours(0,0,0,0);
     returnDate.setHours(0,0,0,0);
     return returnDate < today;
+  }).length;
+
+  const upcomingCount = allocations.filter(a => {
+    if (a.returned_at) return false;
+    const returnDate = new Date(a.expected_return_date);
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    returnDate.setHours(0,0,0,0);
+    return returnDate >= today;
   }).length;
 
   return (
@@ -373,41 +385,90 @@ export const App: React.FC = () => {
               </div>
 
               {/* KPI Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
-                <div className="glass-panel rounded-2xl p-6 border border-slate-900">
-                  <span className="text-xs font-bold text-slate-500 uppercase">Available Assets</span>
+              <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 md:gap-6">
+                <div className="glass-panel rounded-2xl p-5 border border-slate-900 flex flex-col justify-between h-[120px]">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Assets Available</span>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-4xl font-extrabold text-white">
+                    <span className="text-3xl md:text-4xl font-extrabold text-white">
                       {assets.filter(a => a.status === 'available').length}
                     </span>
                   </div>
                 </div>
 
-                <div className="glass-panel rounded-2xl p-6 border border-slate-900">
-                  <span className="text-xs font-bold text-slate-500 uppercase">Allocated Assets</span>
+                <div className="glass-panel rounded-2xl p-5 border border-slate-900 flex flex-col justify-between h-[120px]">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Assets Allocated</span>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-4xl font-extrabold text-indigo-400">
+                    <span className="text-3xl md:text-4xl font-extrabold text-indigo-400">
                       {assets.filter(a => a.status === 'allocated').length}
                     </span>
                   </div>
                 </div>
 
-                <div className="glass-panel rounded-2xl p-6 border border-slate-900">
-                  <span className="text-xs font-bold text-slate-500 uppercase">Under Maintenance</span>
+                <div className="glass-panel rounded-2xl p-5 border border-slate-900 flex flex-col justify-between h-[120px]">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Maintenance Today</span>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-4xl font-extrabold text-amber-400">
+                    <span className="text-3xl md:text-4xl font-extrabold text-amber-400">
                       {assets.filter(a => a.status === 'under_maintenance').length}
                     </span>
                   </div>
                 </div>
 
-                <div className="glass-panel rounded-2xl p-6 border border-slate-900">
-                  <span className="text-xs font-bold text-slate-500 uppercase">Booked Resources</span>
+                <div className="glass-panel rounded-2xl p-5 border border-slate-900 flex flex-col justify-between h-[120px]">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Active Bookings</span>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-4xl font-extrabold text-emerald-400">
+                    <span className="text-3xl md:text-4xl font-extrabold text-emerald-400">
                       {getMockData<Booking>('bookings').filter(b => b.status === 'upcoming').length}
                     </span>
                   </div>
+                </div>
+
+                <div className="glass-panel rounded-2xl p-5 border border-slate-900 flex flex-col justify-between h-[120px]">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pending Transfers</span>
+                  <div className="flex items-baseline gap-2 mt-2">
+                    <span className="text-3xl md:text-4xl font-extrabold text-violet-400">
+                      {transfers.filter(t => t.status === 'pending').length}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="glass-panel rounded-2xl p-5 border border-slate-900 flex flex-col justify-between h-[120px]">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Upcoming Returns</span>
+                  <div className="flex items-baseline gap-2 mt-2">
+                    <span className="text-3xl md:text-4xl font-extrabold text-sky-400">
+                      {upcomingCount}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Actions Bar */}
+              <div className="glass-panel rounded-2xl p-5 border border-slate-900 space-y-3.5">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-350">Quick Actions</h3>
+                <div className="flex flex-wrap gap-4">
+                  <button 
+                    onClick={() => {
+                      if (role === 'admin' || role === 'asset_manager') {
+                        setActiveTab('directory');
+                      } else {
+                        alert('Only Admin or Asset Managers can register assets.');
+                      }
+                    }}
+                    className="flex-1 min-w-[200px] flex items-center justify-center gap-2 py-3 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-semibold transition shadow-md shadow-indigo-600/10 cursor-pointer"
+                  >
+                    + Register New Asset
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('booking')}
+                    className="flex-1 min-w-[200px] flex items-center justify-center gap-2 py-3 px-4 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-xl text-sm font-semibold text-slate-200 transition cursor-pointer"
+                  >
+                    📅 Book Shared Resource
+                  </button>
+                  <button 
+                    onClick={() => setActiveTab('maintenance')}
+                    className="flex-1 min-w-[200px] flex items-center justify-center gap-2 py-3 px-4 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-xl text-sm font-semibold text-slate-200 transition cursor-pointer"
+                  >
+                    🔧 Raise Maintenance Request
+                  </button>
                 </div>
               </div>
 
