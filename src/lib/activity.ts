@@ -4,17 +4,17 @@ import { ActivityLog, Notification } from './types';
 
 export async function logActivity(params: {
   actorId: string;
-  action: string;              // e.g. 'asset_allocated', 'maintenance_approved'
-  entityType: string;          // e.g. 'asset', 'booking'
+  action: string;              // e.g. 'asset_allocated', 'maintenance_approved', 'asset_registered', 'transfer_requested'
+  entityType: string;          // e.g. 'asset', 'booking', 'transfer_request'
   entityId: string;
-  details?: Record<string, unknown>;
+  details?: Record<string, any>;
   notifyUserId?: string;
-  notifyMessage?: string;      // e.g. "Laptop AF-0014 assigned to Priya Shah"
+  notifyMessage?: string;      // e.g. "Laptop AF-0114 assigned to Priya Shah"
   notifyType?: string;
 }) {
   const timestamp = new Date().toISOString();
   
-  // 1. Insert Activity Log
+  // 1. Insert Activity Log locally
   const logId = crypto.randomUUID();
   const newLog: ActivityLog = {
     id: logId,
@@ -25,8 +25,9 @@ export async function logActivity(params: {
     details: params.details || null,
     created_at: timestamp
   };
+  insertMockRow<ActivityLog>('activity_logs', newLog);
 
-  // 2. Insert Notification (optional)
+  // 2. Insert Notification locally (optional)
   let newNotification: Notification | null = null;
   if (params.notifyUserId && params.notifyMessage) {
     newNotification = {
@@ -39,10 +40,11 @@ export async function logActivity(params: {
       is_read: false,
       created_at: timestamp
     };
+    insertMockRow<Notification>('notifications', newNotification);
   }
 
   // --- Real Supabase Execution ---
-  if (isSupabaseConfigured) {
+  if (isSupabaseConfigured && supabase) {
     try {
       await supabase.from('activity_logs').insert({
         actor_id: params.actorId,
@@ -62,13 +64,9 @@ export async function logActivity(params: {
         });
       }
     } catch (err) {
-      console.error("Failed to write to Supabase in logActivity:", err);
+      console.warn("Failed to log activity to Supabase database:", err);
     }
   }
-
-  // --- Mock DB Fallback ---
-  insertMockRow<ActivityLog>('activity_logs', newLog);
-  if (newNotification) {
-    insertMockRow<Notification>('notifications', newNotification);
-  }
 }
+
+export default logActivity;
