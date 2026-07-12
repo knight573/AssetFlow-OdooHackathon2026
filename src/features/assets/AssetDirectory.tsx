@@ -47,6 +47,8 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
   const [newAssetDept, setNewAssetDept] = useState('');
   const [newAssetCondition, setNewAssetCondition] = useState<AssetCondition>('Good');
   const [newAssetBookable, setNewAssetBookable] = useState(false);
+  const [newAssetCost, setNewAssetCost] = useState('');
+  const [newAssetAcquisitionDate, setNewAssetAcquisitionDate] = useState(new Date().toISOString().split('T')[0]);
   const [formError, setFormError] = useState('');
 
   // Expand Asset Log History
@@ -74,12 +76,17 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
   }, []);
 
   // Compute Stats
-  const stats = {
-    total: assets.length,
-    available: assets.filter(a => a.status === 'available').length,
-    allocated: assets.filter(a => a.status === 'allocated').length,
-    maintenance: assets.filter(a => a.status === 'under_maintenance').length,
-  };
+  const [stats, setStats] = useState({ total: 0, available: 0, allocated: 0, maintenance: 0, totalValue: 0 });
+
+  useEffect(() => {
+    setStats({
+      total: assets.length,
+      available: assets.filter(a => a.status === 'available').length,
+      allocated: assets.filter(a => a.status === 'allocated').length,
+      maintenance: assets.filter(a => a.status === 'under_maintenance').length,
+      totalValue: assets.reduce((sum, a) => sum + (a.acquisition_cost || 0), 0)
+    });
+  }, [assets]);
 
   // Handle Register Asset
   const handleRegisterAsset = (e: React.FormEvent) => {
@@ -105,12 +112,14 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
       id: 'ast-' + Math.random().toString(36).substring(2, 11),
       tag: nextTag,
       name: newAssetName.trim(),
-      serial_number: newAssetSerial.trim() || undefined,
+      serial_number: newAssetSerial.trim() || null,
       category_id: newAssetCategory,
-      department_id: newAssetDept || undefined,
+      department_id: newAssetDept || null,
       status: 'available',
       is_bookable: newAssetBookable,
       condition: newAssetCondition,
+      acquisition_cost: newAssetCost ? parseFloat(newAssetCost) : null,
+      acquisition_date: newAssetAcquisitionDate || null,
       created_at: new Date().toISOString()
     };
 
@@ -128,7 +137,8 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
       details: {
         asset_tag: newAsset.tag,
         asset_name: newAsset.name,
-        category: categories.find(c => c.id === newAsset.category_id)?.name || 'Unknown'
+        category: categories.find(c => c.id === newAsset.category_id)?.name || 'Unknown',
+        cost: newAsset.acquisition_cost
       }
     });
 
@@ -139,6 +149,8 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
     setNewAssetDept('');
     setNewAssetCondition('Good');
     setNewAssetBookable(false);
+    setNewAssetCost('');
+    setNewAssetAcquisitionDate(new Date().toISOString().split('T')[0]);
     setShowRegisterPanel(false);
     loadData();
   };
@@ -253,12 +265,13 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
       </div>
 
       {/* KPI Cards Panel */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
         {[
           { label: 'Total Assets', value: stats.total, color: 'border-slate-800 text-white bg-slate-900/40' },
           { label: 'Available', value: stats.available, color: 'border-emerald-500/20 text-emerald-400 bg-emerald-950/10' },
           { label: 'Allocated', value: stats.allocated, color: 'border-indigo-500/20 text-indigo-400 bg-indigo-950/10' },
-          { label: 'Under Repair', value: stats.maintenance, color: 'border-amber-500/20 text-amber-400 bg-amber-950/10' }
+          { label: 'Under Repair', value: stats.maintenance, color: 'border-amber-500/20 text-amber-400 bg-amber-950/10' },
+          { label: 'Portfolio Value', value: `$${stats.totalValue.toLocaleString()}`, color: 'border-violet-500/20 text-violet-400 bg-violet-950/10' }
         ].map((c, i) => (
           <div key={i} className={`p-5 rounded-2xl border glass-card ${c.color} shadow-sm`}>
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{c.label}</p>
@@ -347,6 +360,30 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
                       <option key={d.id} value={d.id}>{d.name}</option>
                     ))}
                   </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5">Acquisition Cost ($)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    placeholder="e.g. 1200.00"
+                    value={newAssetCost}
+                    onChange={(e) => setNewAssetCost(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-brand-500 transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5">Acquisition Date</label>
+                  <input
+                    type="date"
+                    value={newAssetAcquisitionDate}
+                    onChange={(e) => setNewAssetAcquisitionDate(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-brand-500 transition-colors"
+                  />
                 </div>
               </div>
 
@@ -620,41 +657,79 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
                       {/* Expanded History Log row */}
                       {isExpanded && (
                         <tr>
-                          <td colSpan={7} className="bg-slate-950 px-6 py-4.5 border-t border-b border-slate-850">
-                            <div className="max-w-2xl text-left space-y-3.5 animate-slide-down">
-                              <h4 className="text-xs font-bold uppercase tracking-wider text-brand-400 flex items-center gap-2">
-                                <History className="h-4 w-4" />
-                                Asset Node Audit Trail: {asset.tag}
-                              </h4>
+                          <td colSpan={7} className="bg-slate-950 px-6 py-5 border-t border-b border-slate-850">
+                            <div className="flex flex-col md:flex-row gap-6 animate-slide-down">
                               
-                              {assetHistory.length === 0 ? (
-                                <p className="text-xs text-slate-500">No logs reported for this device.</p>
-                              ) : (
-                                <div className="relative pl-4 border-l border-slate-800 space-y-3">
-                                  {assetHistory.map((log) => {
-                                    const actorName = profiles.find(p => p.id === log.actor_id)?.name || 'System';
-                                    return (
-                                      <div key={log.id} className="text-xs relative">
-                                        <span className="absolute -left-[21px] top-1 h-2 w-2 rounded-full bg-slate-800 ring-4 ring-slate-950" />
-                                        <div className="flex items-center justify-between text-slate-400 mb-0.5">
-                                          <span className="font-semibold text-slate-200">
-                                            {log.action.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
-                                          </span>
-                                          <span className="text-[10px] text-slate-500 font-mono">
-                                            {new Date(log.created_at).toLocaleString()}
-                                          </span>
-                                        </div>
-                                        <p className="text-slate-400">
-                                          Triggered by: <span className="text-slate-300 font-medium">{actorName}</span>
-                                          {log.details && log.details.assignee && (
-                                            <> &rarr; Assigned to <span className="text-slate-300 font-medium">{log.details.assignee}</span></>
-                                          )}
-                                        </p>
-                                      </div>
-                                    );
-                                  })}
+                              {/* Left Panel: QR Code and Node Details */}
+                              <div className="w-full md:w-60 bg-slate-900 border border-slate-800/80 rounded-xl p-4.5 flex flex-col items-center justify-center space-y-4 shadow-inner shrink-0 text-center">
+                                <h5 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                                  Asset Tag QR Code
+                                </h5>
+                                <div className="p-2.5 bg-white rounded-lg shadow-md hover:scale-102 transition-transform duration-200">
+                                  <img 
+                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=110x110&data=${asset.tag}`} 
+                                    alt={`QR Code for ${asset.tag}`}
+                                    className="w-28 h-28"
+                                    onError={(e) => {
+                                      // fallback placeholder if offline
+                                      (e.target as any).src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2050/svg" width="100" height="100"><rect width="100" height="100" fill="gray"/></svg>';
+                                    }}
+                                  />
                                 </div>
-                              )}
+                                <div className="space-y-1">
+                                  <span className="text-xs font-mono font-extrabold text-brand-300 px-2 py-0.5 rounded bg-slate-950 border border-slate-850">
+                                    {asset.tag}
+                                  </span>
+                                  {asset.acquisition_cost !== undefined && asset.acquisition_cost !== null && (
+                                    <p className="text-[11px] text-slate-400 font-semibold pt-1">
+                                      Cost: <span className="text-emerald-400">${asset.acquisition_cost.toLocaleString()}</span>
+                                    </p>
+                                  )}
+                                  {asset.acquisition_date && (
+                                    <p className="text-[10px] text-slate-500">
+                                      Acquired: {new Date(asset.acquisition_date).toLocaleDateString()}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Right Panel: Audit Logs */}
+                              <div className="flex-1 text-left space-y-3.5">
+                                <h4 className="text-xs font-bold uppercase tracking-wider text-brand-400 flex items-center gap-2">
+                                  <History className="h-4 w-4" />
+                                  Asset Node Audit Trail
+                                </h4>
+                                
+                                {assetHistory.length === 0 ? (
+                                  <p className="text-xs text-slate-500 italic">No logs reported for this device.</p>
+                                ) : (
+                                  <div className="relative pl-4 border-l border-slate-800 space-y-3 max-h-56 overflow-y-auto">
+                                    {assetHistory.map((log) => {
+                                      const actorName = profiles.find(p => p.id === log.actor_id)?.name || 'System';
+                                      return (
+                                        <div key={log.id} className="text-xs relative">
+                                          <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full bg-slate-800 ring-4 ring-slate-950" />
+                                          <div className="flex items-center justify-between text-slate-400 mb-0.5">
+                                            <span className="font-semibold text-slate-200">
+                                              {log.action.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                                            </span>
+                                            <span className="text-[10px] text-slate-500 font-mono">
+                                              {new Date(log.created_at).toLocaleString()}
+                                            </span>
+                                          </div>
+                                          <p className="text-slate-450 leading-normal">
+                                            Triggered by: <span className="text-slate-300 font-medium">{actorName}</span>
+                                            {log.details && log.details.assignee && (
+                                              <> &rarr; Assigned to <span className="text-slate-350 font-medium">{log.details.assignee}</span></>
+                                            )}
+                                          </p>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+
                             </div>
                           </td>
                         </tr>
