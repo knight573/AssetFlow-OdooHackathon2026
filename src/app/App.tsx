@@ -580,72 +580,94 @@ export const App: React.FC = () => {
           {activeTab === 'dashboard' && (
             <div className="space-y-6 animate-fade-in">
               <div className="flex flex-col gap-1">
-                <h1 className="text-3xl font-extrabold text-white">Command Dashboard</h1>
-                <p className="text-slate-400">Organization-wide resource deployment stats.</p>
+                <h1 className="text-2xl font-bold text-white tracking-tight">Command Dashboard</h1>
+                <p className="text-sm text-slate-400 leading-relaxed">Organization-wide resource deployment and operational health.</p>
               </div>
 
-              {/* KPI Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 md:gap-6">
-                <div className="glass-panel rounded-2xl p-5 border border-slate-900 flex flex-col justify-between h-[120px]">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Assets Available</span>
+              {/* Primary Metrics Grid (Strict 8px spacing, 12px card radius, refined typography) */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="glass-panel rounded-xl p-5 border border-slate-800/80 hover:border-slate-700 transition-colors flex flex-col justify-between min-h-[104px]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Available</span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                  </div>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-3xl md:text-4xl font-extrabold text-white">
+                    <span className="text-2xl font-bold text-white tracking-tight">
                       {assets.filter(a => a.status === 'available').length}
                     </span>
+                    <span className="text-xs text-slate-500">units</span>
                   </div>
                 </div>
 
-                <div className="glass-panel rounded-2xl p-5 border border-slate-900 flex flex-col justify-between h-[120px]">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Assets Allocated</span>
+                <div className="glass-panel rounded-xl p-5 border border-slate-800/80 hover:border-slate-700 transition-colors flex flex-col justify-between min-h-[104px]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Allocated</span>
+                    <span className="w-2 h-2 rounded-full bg-indigo-400" />
+                  </div>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-3xl md:text-4xl font-extrabold text-indigo-400">
+                    <span className="text-2xl font-bold text-indigo-400 tracking-tight">
                       {assets.filter(a => a.status === 'allocated').length}
                     </span>
+                    <span className="text-xs text-slate-500">deployed</span>
                   </div>
                 </div>
 
-                <div className="glass-panel rounded-2xl p-5 border border-slate-900 flex flex-col justify-between h-[120px]">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Maintenance Today</span>
+                <div className="glass-panel rounded-xl p-5 border border-slate-800/80 hover:border-slate-700 transition-colors flex flex-col justify-between min-h-[104px]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Maintenance</span>
+                    <span className="w-2 h-2 rounded-full bg-amber-400" />
+                  </div>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-3xl md:text-4xl font-extrabold text-amber-400">
+                    <span className="text-2xl font-bold text-amber-400 tracking-tight">
                       {assets.filter(a => a.status === 'under_maintenance').length}
                     </span>
+                    <span className="text-xs text-slate-500">in repair</span>
                   </div>
                 </div>
 
-                <div className="glass-panel rounded-2xl p-5 border border-slate-900 flex flex-col justify-between h-[120px]">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Active Bookings</span>
+                <div className="glass-panel rounded-xl p-5 border border-slate-800/80 hover:border-slate-700 transition-colors flex flex-col justify-between min-h-[104px]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Bookings</span>
+                    <span className="w-2 h-2 rounded-full bg-cyan-400" />
+                  </div>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-3xl md:text-4xl font-extrabold text-emerald-400">
+                    <span className="text-2xl font-bold text-cyan-400 tracking-tight">
                       {getMockData<Booking>('bookings').filter(b => b.status === 'upcoming').length}
                     </span>
+                    <span className="text-xs text-slate-500">active</span>
                   </div>
                 </div>
+              </div>
 
-                <div className="glass-panel rounded-2xl p-5 border border-slate-900 flex flex-col justify-between h-[120px]">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pending Transfers</span>
+              {/* Secondary Operations Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="glass-panel rounded-xl p-5 border border-slate-800/80 hover:border-slate-700 transition-colors flex flex-col justify-between min-h-[104px]">
+                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pending Transfers</span>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-3xl md:text-4xl font-extrabold text-violet-400">
+                    <span className="text-2xl font-bold text-violet-400 tracking-tight">
                       {transfers.filter(t => t.status === 'pending').length}
                     </span>
+                    <span className="text-xs text-slate-500">awaiting action</span>
                   </div>
                 </div>
 
-                <div className="glass-panel rounded-2xl p-5 border border-slate-[#e11d48]/20 bg-[#f43f5e]/5 flex flex-col justify-between h-[120px]">
-                  <span className="text-xs font-bold text-rose-400 uppercase tracking-wider">Overdue Returns</span>
+                <div className="glass-panel rounded-xl p-5 border border-rose-500/30 bg-rose-500/5 hover:border-rose-500/40 transition-colors flex flex-col justify-between min-h-[104px]">
+                  <span className="text-xs font-semibold text-rose-400 uppercase tracking-wider">Overdue Returns</span>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-3xl md:text-4xl font-extrabold text-rose-500">
+                    <span className="text-2xl font-bold text-rose-500 tracking-tight">
                       {overdueCount}
                     </span>
+                    <span className="text-xs text-rose-400/80">requires follow-up</span>
                   </div>
                 </div>
 
-                <div className="glass-panel rounded-2xl p-5 border border-slate-900 flex flex-col justify-between h-[120px]">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Upcoming Returns</span>
+                <div className="glass-panel rounded-xl p-5 border border-slate-800/80 hover:border-slate-700 transition-colors flex flex-col justify-between min-h-[104px]">
+                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Upcoming Returns</span>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-3xl md:text-4xl font-extrabold text-sky-400">
+                    <span className="text-2xl font-bold text-sky-400 tracking-tight">
                       {upcomingCount}
                     </span>
+                    <span className="text-xs text-slate-500">scheduled</span>
                   </div>
                 </div>
               </div>

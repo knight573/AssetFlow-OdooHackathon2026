@@ -307,21 +307,21 @@ export const AssetAudit: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-extrabold text-slate-100 flex items-center gap-2">
-            <ClipboardCheck className="h-7 w-7 text-indigo-500 animate-pulse" /> Asset Inventory Audits
+          <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
+            <ClipboardCheck className="h-6 w-6 text-indigo-400" /> Asset Inventory Audits
           </h2>
-          <p className="text-slate-400 text-sm mt-1">
-            Conduct inventory checks, flag discrepancies, and ensure audit logs remain correct.
+          <p className="text-sm text-slate-400 mt-1 leading-relaxed">
+            Conduct structured verification cycles, flag missing/damaged items, and maintain audit histories.
           </p>
         </div>
         {(profile?.role === 'admin' || profile?.role === 'asset_manager') && (
           <button 
             onClick={() => setIsCreateModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-slate-100 rounded-xl font-medium transition shadow-lg shadow-indigo-500/25 border border-indigo-500/30"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 active:bg-brand-700 text-white text-sm font-semibold rounded-lg transition-all shadow-sm"
           >
-            <Plus className="h-5 w-5" /> Start Audit Cycle
+            <Plus className="h-4 w-4" /> Start Audit Cycle
           </button>
         )}
       </div>
