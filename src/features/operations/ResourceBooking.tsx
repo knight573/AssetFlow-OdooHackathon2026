@@ -2,13 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../lib/auth';
 import { Asset, Booking, Profile } from '../../lib/types';
 import { getBookableResources, getBookings, createBooking, cancelBooking } from './operationsApi';
-import { Calendar, Clock, Plus, X, AlertTriangle, CheckCircle, Trash2, ShieldAlert } from 'lucide-react';
+import { Calendar, Clock, Plus, X, AlertTriangle, CheckCircle, Trash2, ShieldAlert, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export const ResourceBooking: React.FC = () => {
   const { profile } = useAuth();
   const [resources, setResources] = useState<Asset[]>([]);
   const [bookings, setBookings] = useState<(Booking & { resource?: Asset; booker?: Profile })[]>([]);
   const [selectedResourceId, setSelectedResourceId] = useState<string>('');
+  
+  // Tab selector for right panel (Calendar vs List Log)
+  const [rightTab, setRightTab] = useState<'calendar' | 'list'>('calendar');
+  
+  // Calendar month selection states
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   
   // Form state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -98,6 +104,39 @@ export const ResourceBooking: React.FC = () => {
         setErrorMessage(err.message || "Failed to cancel booking.");
       }
     }
+  };
+
+  // Month navigation helpers
+  const handlePrevMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+  };
+
+  const getDaysInMonth = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDayIndex = new Date(year, month, 1).getDay();
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    
+    const days: (Date | null)[] = [];
+    for (let i = 0; i < firstDayIndex; i++) {
+      days.push(null);
+    }
+    for (let i = 1; i <= lastDay; i++) {
+      days.push(new Date(year, month, i));
+    }
+    return days;
+  };
+
+  const getBookingsForDay = (day: Date) => {
+    const localYear = day.getFullYear();
+    const localMonth = (day.getMonth() + 1).toString().padStart(2, '0');
+    const localDay = day.getDate().toString().padStart(2, '0');
+    const dayStr = `${localYear}-${localMonth}-${localDay}`;
+    return bookings.filter(b => b.status !== 'cancelled' && b.start_time.startsWith(dayStr));
   };
 
   const selectedResource = resources.find(r => r.id === selectedResourceId);
@@ -251,82 +290,212 @@ export const ResourceBooking: React.FC = () => {
         </div>
 
         {/* Bookings Logs Feed (Right Col) */}
-        <div className="glass-panel rounded-2xl p-6 flex flex-col h-[600px]">
-          <div className="mb-4">
-            <h2 className="text-xl font-semibold text-white">Booking Log</h2>
-            <p className="text-xs text-slate-400 mt-0.5">
-              History of all active and upcoming reservations.
-            </p>
+        <div className="glass-panel rounded-2xl p-6 flex flex-col h-[650px]">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-semibold text-white">Reservations</h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Visual monthly calendar & list logs.
+              </p>
+            </div>
+            
+            {/* View Selector Tab */}
+            <div className="flex bg-slate-900 border border-slate-800 p-0.5 rounded-lg shrink-0">
+              <button
+                type="button"
+                onClick={() => setRightTab('calendar')}
+                className={`px-3 py-1 rounded-md text-[10px] font-bold transition ${
+                  rightTab === 'calendar' 
+                    ? 'bg-indigo-600 text-white shadow-md font-extrabold' 
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Calendar
+              </button>
+              <button
+                type="button"
+                onClick={() => setRightTab('list')}
+                className={`px-3 py-1 rounded-md text-[10px] font-bold transition ${
+                  rightTab === 'list' 
+                    ? 'bg-indigo-600 text-white shadow-md font-extrabold' 
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                List Log
+              </button>
+            </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto space-y-4 pr-1">
-            {bookings.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-slate-500 py-10">
-                <Clock className="w-10 h-10 mb-2 text-slate-600" />
-                <span className="text-sm">No reservations logged yet.</span>
+          {rightTab === 'calendar' ? (
+            <div className="flex-1 flex flex-col space-y-3.5">
+              {/* MONTH TITLE AND CONTROLS */}
+              <div className="flex items-center justify-between bg-slate-950/40 border border-slate-900 rounded-xl px-3 py-2">
+                <button
+                  type="button"
+                  onClick={handlePrevMonth}
+                  className="p-1 hover:bg-slate-900 border border-slate-800 rounded text-slate-400 hover:text-white transition cursor-pointer"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="text-[11px] font-bold text-slate-200 uppercase tracking-wide">
+                  {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][currentMonth.getMonth()]} {currentMonth.getFullYear()}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleNextMonth}
+                  className="p-1 hover:bg-slate-900 border border-slate-800 rounded text-slate-400 hover:text-white transition cursor-pointer"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
               </div>
-            ) : (
-              bookings.map((b) => {
-                const isUpcoming = b.status === 'upcoming';
-                const isCancelled = b.status === 'cancelled';
-                const start = new Date(b.start_time);
-                const end = new Date(b.end_time);
-                const isOwned = profile && b.booked_by === profile.id;
-                
-                return (
-                  <div 
-                    key={b.id} 
-                    className={`p-4 rounded-xl border relative transition-all ${
-                      isCancelled 
-                        ? 'bg-slate-950/20 border-slate-900 opacity-60' 
-                        : 'bg-slate-950/45 border-slate-900 hover:border-slate-800'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <span className="text-xs font-semibold text-indigo-400 bg-indigo-950/50 px-2 py-0.5 rounded border border-indigo-900/30">
-                          {b.resource?.name || 'Shared Resource'}
-                        </span>
-                        <h4 className="text-sm font-bold text-white mt-2">{b.purpose}</h4>
-                      </div>
+
+              {/* WEEKDAY LABELS */}
+              <div className="grid grid-cols-7 text-center text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">
+                {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d, index) => (
+                  <div key={index} className="py-1">{d}</div>
+                ))}
+              </div>
+
+              {/* DAYS CALENDAR GRID */}
+              <div className="grid grid-cols-7 gap-1">
+                {getDaysInMonth(currentMonth).map((day, index) => {
+                  if (day === null) {
+                    return <div key={`empty-${index}`} className="aspect-square bg-transparent" />;
+                  }
+
+                  const localYear = day.getFullYear();
+                  const localMonth = (day.getMonth() + 1).toString().padStart(2, '0');
+                  const localDay = day.getDate().toString().padStart(2, '0');
+                  const dayStr = `${localYear}-${localMonth}-${localDay}`;
+                  
+                  const isSelected = formDate === dayStr;
+                  const dayBookings = getBookingsForDay(day);
+                  const hasBookings = dayBookings.length > 0;
+                  const isToday = new Date().toDateString() === day.toDateString();
+
+                  return (
+                    <button
+                      key={dayStr}
+                      type="button"
+                      onClick={() => setFormDate(dayStr)}
+                      className={`relative aspect-square rounded-lg flex flex-col items-center justify-center border text-xs font-bold transition-all cursor-pointer ${
+                        isSelected
+                          ? 'bg-indigo-600 border-indigo-500 text-white shadow shadow-indigo-600/30'
+                          : isToday
+                          ? 'bg-slate-900 border-slate-800 text-indigo-400'
+                          : 'bg-slate-950/20 border-slate-900/50 text-slate-350 hover:bg-slate-900/30 hover:border-slate-800'
+                      }`}
+                    >
+                      <span>{day.getDate()}</span>
                       
-                      {/* Status Badges */}
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                        isCancelled 
-                          ? 'bg-slate-800 text-slate-400' 
-                          : isUpcoming 
-                            ? 'bg-indigo-950 text-indigo-300 border border-indigo-900' 
-                            : 'bg-emerald-950 text-emerald-300 border border-emerald-900'
-                      }`}>
-                        {b.status.toUpperCase()}
-                      </span>
-                    </div>
+                      {/* Density Dot Indicator */}
+                      {hasBookings && (
+                        <span className={`absolute bottom-1.5 w-1.5 h-1.5 rounded-full ${
+                          isSelected ? 'bg-white' : 'bg-indigo-400'
+                        }`} />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
 
-                    <div className="mt-3 space-y-1 text-xs text-slate-400">
-                      <p className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-slate-500" />
-                        {start.toLocaleDateString()} · {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                      <p>
-                        <span className="text-slate-500">Reserved by:</span> {b.booker?.name || 'Unknown'}
-                      </p>
-                    </div>
-
-                    {/* Cancel action if owned/authorized and upcoming */}
-                    {isUpcoming && !isCancelled && (isOwned || profile?.role === 'admin' || profile?.role === 'asset_manager') && (
-                      <button
-                        onClick={() => handleCancelBooking(b.id)}
-                        className="mt-3 flex items-center gap-1 text-[10px] font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-950/30 px-2 py-1.5 rounded-lg border border-rose-950 transition-all w-full justify-center"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        Cancel Reservation
-                      </button>
-                    )}
+              {/* TARGET DATE LOG LISTING */}
+              <div className="bg-slate-950/25 border border-slate-900/80 rounded-xl p-3.5 space-y-2 mt-auto">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                  Active Reservs. ({new Date(formDate).toLocaleDateString()})
+                </span>
+                
+                {bookings.filter(b => b.status !== 'cancelled' && b.start_time.startsWith(formDate)).length === 0 ? (
+                  <p className="text-[11px] text-slate-600 italic">No bookings on this day</p>
+                ) : (
+                  <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
+                    {bookings.filter(b => b.status !== 'cancelled' && b.start_time.startsWith(formDate)).map(b => (
+                      <div key={b.id} className="text-xs bg-slate-900/40 p-2 rounded-lg border border-slate-850 flex items-center justify-between">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-white leading-tight">{b.purpose}</span>
+                          <span className="text-[10px] text-slate-450 mt-0.5">
+                            {b.resource?.name || 'Asset'} · {new Date(b.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <span className="text-[9px] font-bold uppercase text-indigo-400 bg-indigo-950/40 px-1.5 py-0.5 rounded border border-indigo-900/20">
+                          {b.status}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                );
-              })
-            )}
-          </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+              {bookings.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-slate-500 py-10">
+                  <Clock className="w-10 h-10 mb-2 text-slate-600" />
+                  <span className="text-sm">No reservations logged yet.</span>
+                </div>
+              ) : (
+                bookings.map((b) => {
+                  const isUpcoming = b.status === 'upcoming';
+                  const isCancelled = b.status === 'cancelled';
+                  const start = new Date(b.start_time);
+                  const end = new Date(b.end_time);
+                  const isOwned = profile && b.booked_by === profile.id;
+                  
+                  return (
+                    <div 
+                      key={b.id} 
+                      className={`p-4 rounded-xl border relative transition-all ${
+                        isCancelled 
+                          ? 'bg-slate-950/20 border-slate-900 opacity-60' 
+                          : 'bg-slate-950/45 border-slate-900 hover:border-slate-800'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <span className="text-xs font-semibold text-indigo-400 bg-indigo-950/50 px-2 py-0.5 rounded border border-indigo-900/30">
+                            {b.resource?.name || 'Shared Resource'}
+                          </span>
+                          <h4 className="text-sm font-bold text-white mt-2">{b.purpose}</h4>
+                        </div>
+                        
+                        {/* Status Badges */}
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          isCancelled 
+                            ? 'bg-slate-850 text-slate-500' 
+                            : isUpcoming 
+                              ? 'bg-indigo-950 text-indigo-300 border border-indigo-900' 
+                              : 'bg-emerald-950 text-emerald-300 border border-emerald-900'
+                        }`}>
+                          {b.status.toUpperCase()}
+                        </span>
+                      </div>
+
+                      <div className="mt-3 space-y-1 text-xs text-slate-400">
+                        <p className="flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-slate-500" />
+                          {start.toLocaleDateString()} · {start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                        <p>
+                          <span className="text-slate-500">Reserved by:</span> {b.booker?.name || 'Unknown'}
+                        </p>
+                      </div>
+
+                      {/* Cancel action if owned/authorized and upcoming */}
+                      {isUpcoming && !isCancelled && (isOwned || profile?.role === 'admin' || profile?.role === 'asset_manager') && (
+                        <button
+                          onClick={() => handleCancelBooking(b.id)}
+                          className="mt-3 flex items-center gap-1 text-[10px] font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-950/30 px-2 py-1.5 rounded-lg border border-rose-950 transition-all w-full justify-center"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Cancel Reservation
+                        </button>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
         </div>
 
       </div>

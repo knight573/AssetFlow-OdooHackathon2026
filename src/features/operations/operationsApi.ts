@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
-import { Booking, MaintenanceRequest, Asset, Profile } from '../../lib/types';
+import { Booking, MaintenanceRequest, Asset, Profile, Notification } from '../../lib/types';
 import { getMockData, setMockData, updateMockRow, insertMockRow } from '../../lib/mockDb';
 import { logActivity } from '../../lib/activity';
 
@@ -177,6 +177,22 @@ export async function createBooking(
     notifyUserId: bookedBy,
     notifyMessage: `Successfully booked ${resourceName} for "${purpose}" starting at ${new Date(startTime).toLocaleString()}`,
     notifyType: 'booking_confirmed'
+  });
+
+  // Create simulated Booking Confirmation Email Notification
+  const profilesList = getMockData<Profile>('profiles');
+  const userProfile = profilesList.find(p => p.id === bookedBy);
+  const userEmail = userProfile ? userProfile.email : 'user@company.com';
+  
+  insertMockRow<Notification>('notifications', {
+    id: crypto.randomUUID(),
+    user_id: bookedBy,
+    type: 'mock_email',
+    message: `✉️ [Email Sent to ${userEmail}] Booking Confirmed: "${purpose}" (${resourceName}) has been reserved. Start: ${new Date(startTime).toLocaleString()}`,
+    related_entity_type: 'booking',
+    related_entity_id: id,
+    is_read: false,
+    created_at: created_at
   });
 
   return newBooking;

@@ -11,8 +11,8 @@ import { Notifications } from '../features/insights/Notifications';
 import { DemoSimulator } from '../components/DemoSimulator';
 import { OrgSetup } from '../features/organization/OrgSetup';
 import { Login } from '../features/organization/Login';
-import { getMockData } from '../lib/mockDb';
-import { Asset, Booking, MaintenanceRequest, Notification, ActivityLog, Allocation, TransferRequest } from '../lib/types';
+import { getMockData, setMockData } from '../lib/mockDb';
+import { Asset, Booking, MaintenanceRequest, Notification, ActivityLog, Allocation, TransferRequest, Profile } from '../lib/types';
 import { ClipboardCheck, TrendingUp, History, Terminal, Landmark, ArrowLeft, ArrowRight } from 'lucide-react';
 import { 
   LayoutDashboard, Wrench, CalendarDays, ShieldCheck, 
@@ -88,6 +88,87 @@ export const App: React.FC = () => {
     setPreselectAssetId(undefined);
     setPreselectAction(undefined);
   };
+
+  const checkUpcomingBookingReminders = (bookingsList: Booking[], currentUserId: string, profilesList: Profile[], assetsList: Asset[]) => {
+    const notificationsList = getMockData<Notification>('notifications');
+    const now = new Date();
+    let updated = false;
+
+    bookingsList.forEach(b => {
+      if (b.status !== 'upcoming' || b.booked_by !== currentUserId) return;
+
+      const startTime = new Date(b.start_time);
+      const diffMs = startTime.getTime() - now.getTime();
+      const diffMins = diffMs / (1000 * 60);
+
+      // If booking starts in next 60 minutes
+      if (diffMins > 0 && diffMins <= 60) {
+        const alreadyNotified = notificationsList.some(n => n.related_entity_id === b.id && n.type === 'booking_reminder_1h');
+
+        if (!alreadyNotified) {
+          const asset = assetsList.find(a => a.id === b.resource_asset_id);
+          const resourceName = asset ? asset.name : 'Shared Resource';
+          const userProfile = profilesList.find(p => p.id === currentUserId);
+          const userEmail = userProfile ? userProfile.email : 'user@company.com';
+
+          // 1. App Icon Reminder (upcoming tag)
+          notificationsList.push({
+            id: crypto.randomUUID(),
+            user_id: currentUserId,
+            type: 'booking_upcoming',
+            message: `⏰ Reminder: Your booking for "${b.purpose}" (${resourceName}) starts in 1 hour at ${startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}!`,
+            related_entity_type: 'booking',
+            related_entity_id: b.id,
+            is_read: false,
+            created_at: now.toISOString()
+          });
+
+          // 2. Simulated Email Reminder
+          notificationsList.push({
+            id: crypto.randomUUID(),
+            user_id: currentUserId,
+            type: 'mock_email',
+            message: `✉️ [Email Sent to ${userEmail}] Meeting Reminder: "${b.purpose}" (${resourceName}) is scheduled at ${startTime.toLocaleString()}.`,
+            related_entity_type: 'booking',
+            related_entity_id: b.id,
+            is_read: false,
+            created_at: now.toISOString()
+          });
+
+          // 3. Prevent duplicate notifications
+          notificationsList.push({
+            id: crypto.randomUUID(),
+            user_id: currentUserId,
+            type: 'booking_reminder_1h',
+            message: `System: Reminder flagged for booking ${b.id}`,
+            related_entity_type: 'booking',
+            related_entity_id: b.id,
+            is_read: true,
+            created_at: now.toISOString()
+          });
+
+          updated = true;
+        }
+      }
+    });
+
+    if (updated) {
+      setMockData('notifications', notificationsList);
+      window.dispatchEvent(new CustomEvent('mock-db-change', { detail: { table: 'notifications' } }));
+    }
+  };
+
+  useEffect(() => {
+    if (profile) {
+      const interval = setInterval(() => {
+        const bList = getMockData<Booking>('bookings');
+        const pList = getMockData<Profile>('profiles');
+        const aList = getMockData<Asset>('assets');
+        checkUpcomingBookingReminders(bList, profile.id, pList, aList);
+      }, 15000);
+      return () => clearInterval(interval);
+    }
+  }, [profile]);
 
   // Feed stats from Mock database
   const loadDashboardData = () => {
@@ -411,14 +492,36 @@ export const App: React.FC = () => {
                   {notifications.length === 0 ? (
                     <p className="text-[11px] text-slate-600 text-center py-4">No recent notification alerts</p>
                   ) : (
-                    notifications.map(n => (
-                      <div key={n.id} className="p-2.5 bg-slate-950/40 border border-slate-900 rounded-xl text-xs">
-                        <p className="text-slate-300 font-medium leading-relaxed">{n.message}</p>
-                        <span className="text-[9px] text-slate-500 mt-1 block">
-                          {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
-                    ))
+                    notifications.filter(n => n.type !== 'booking_reminder_1h').map(n => {
+                      const isUpcoming = n.type === 'booking_upcoming' || n.type === 'booking_confirmed';
+                      const isEmail = n.type === 'mock_email';
+                      
+                      return (
+                        <div key={n.id} className="p-2.5 bg-slate-950/40 border border-slate-900 rounded-xl text-xs space-y-1">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            {isUpcoming && (
+                              <span className="text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                                Upcoming
+                              </span>
+                            )}
+                            {isEmail && (
+                              <span className="text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-teal-500/10 text-teal-400 border border-teal-500/20">
+                                Email Sent
+                              </span>
+                            )}
+                            {!isUpcoming && !isEmail && (
+                              <span className="text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-450 border border-slate-700/30">
+                                Info
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-slate-350 font-medium leading-relaxed">{n.message}</p>
+                          <span className="text-[9px] text-slate-500 mt-1 block">
+                            {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      );
+                    })
                   )}
                 </div>
               </div>
