@@ -402,6 +402,13 @@ export default function AllocationTransfer({
     return a ? `${a.tag} — ${a.name}` : 'Unknown Asset';
   };
 
+  const isAllocationOverdue = (alloc: Allocation) => {
+    if (alloc.status !== 'active') return false;
+    const returnDate = alloc.expected_return_date || alloc.expected_return_at;
+    if (!returnDate) return false;
+    return new Date(returnDate) < new Date();
+  };
+
   const isApprover = currentUser.role === 'admin' || currentUser.role === 'asset_manager' || currentUser.role === 'department_head';
 
   const pendingTransfers = transfers.filter(t => t.status === 'pending');
@@ -661,6 +668,62 @@ export default function AllocationTransfer({
                 </button>
               </div>
             </form>
+          </div>
+
+          {/* 3. ACTIVE ALLOCATIONS LIST TABLE */}
+          <div className="lg:col-span-2 glass p-6 md:p-8 rounded-2xl border border-slate-800/80 space-y-4">
+            <h3 className="font-bold text-white text-lg flex items-center gap-2">
+              <ClipboardList className="h-5 w-5 text-emerald-400" />
+              Active Hardware Deployments
+            </h3>
+            {allocations.filter(al => al.status === 'active').length === 0 ? (
+              <p className="text-xs text-slate-500 italic">No active hardware deployments currently cataloged.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-left text-xs text-slate-400">
+                  <thead>
+                    <tr className="border-b border-slate-800 pb-2 text-slate-500">
+                      <th className="py-2.5 font-bold uppercase tracking-wider">Asset</th>
+                      <th className="py-2.5 font-bold uppercase tracking-wider">Assigned Holder</th>
+                      <th className="py-2.5 font-bold uppercase tracking-wider">Allocated On</th>
+                      <th className="py-2.5 font-bold uppercase tracking-wider">Expected Return</th>
+                      <th className="py-2.5 font-bold uppercase tracking-wider">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-850">
+                    {allocations.filter(al => al.status === 'active').map((al) => {
+                      const overdue = isAllocationOverdue(al);
+                      const returnDate = al.expected_return_date || al.expected_return_at;
+                      return (
+                        <tr key={al.id} className="hover:bg-slate-900/10 transition-colors">
+                          <td className="py-3 font-semibold text-slate-350">
+                            {getAssetTagAndName(al.asset_id)}
+                          </td>
+                          <td className="py-3">
+                            {getProfileName(al.profile_id || al.employee_id || '')}
+                          </td>
+                          <td className="py-3 font-mono">
+                            {al.allocated_at ? new Date(al.allocated_at).toLocaleDateString() : 'N/A'}
+                          </td>
+                          <td className={`py-3 font-mono ${overdue ? 'text-rose-400 font-bold' : ''}`}>
+                            {returnDate ? new Date(returnDate).toLocaleDateString() : 'Indefinite'}
+                          </td>
+                          <td className="py-3">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${
+                              overdue 
+                                ? 'bg-rose-500/10 text-rose-400 border border-rose-900/30' 
+                                : 'bg-emerald-500/10 text-emerald-400 border border-emerald-900/30'
+                            }`}>
+                              {overdue ? 'Overdue' : 'Active'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
         </div>
