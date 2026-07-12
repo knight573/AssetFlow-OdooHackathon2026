@@ -17,6 +17,8 @@
     "jsx": "react-jsx",
 
     /* Relaxed Linting & Strictness for Hackathon */
+    "strict": false,
+    "strictNullChecks": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noImplicitAny": false,

@@ -2,20 +2,38 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../lib/auth';
 import { ResourceBooking } from '../features/operations/ResourceBooking';
 import { MaintenanceManagement } from '../features/operations/MaintenanceManagement';
+import AssetDirectory from '../features/assets/AssetDirectory';
+import AllocationTransfer from '../features/assets/AllocationTransfer';
 import { getMockData } from '../lib/mockDb';
 import { Asset, Booking, MaintenanceRequest, Notification, ActivityLog } from '../lib/types';
 import { 
   LayoutDashboard, Wrench, CalendarDays, ShieldCheck, 
-  FolderLock, Bell, LogOut, ChevronRight, Sparkles, User, Settings
+  FolderLock, Bell, LogOut, ChevronRight, Sparkles, User, Settings,
+  Boxes, Layers
 } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const { user, profile, role, switchProfile, allProfiles, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'booking' | 'maintenance' | 'placeholder'>('booking');
+  const { profile, role, switchProfile, allProfiles, logout } = useAuth();
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'directory' | 'allocations' | 'booking' | 'maintenance' | 'placeholder'>('booking');
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
+
+  // Preselected parameters for linking tabs between Directory and Allocations (P2 feature integration)
+  const [preselectAssetId, setPreselectAssetId] = useState<string | undefined>(undefined);
+  const [preselectAction, setPreselectAction] = useState<'allocate' | 'return' | 'transfer' | undefined>(undefined);
+
+  const handleNavigateToAllocations = (assetId?: string, actionType?: 'allocate' | 'return' | 'transfer') => {
+    setPreselectAssetId(assetId);
+    setPreselectAction(actionType);
+    setActiveTab('allocations');
+  };
+
+  const clearPreselect = () => {
+    setPreselectAssetId(undefined);
+    setPreselectAction(undefined);
+  };
 
   // Feed stats from Mock database
   const loadDashboardData = () => {
@@ -65,6 +83,30 @@ export const App: React.FC = () => {
             <LayoutDashboard className="w-5 h-5" />
             Command Dashboard
           </button>
+
+          <button
+            onClick={() => setActiveTab('directory')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+              activeTab === 'directory' 
+                ? 'bg-indigo-600/10 text-indigo-400 border-l-4 border-indigo-500' 
+                : 'text-slate-400 hover:text-white hover:bg-slate-900/30'
+            }`}
+          >
+            <Boxes className="w-5 h-5" />
+            Asset Directory
+          </button>
+
+          <button
+            onClick={() => setActiveTab('allocations')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+              activeTab === 'allocations' 
+                ? 'bg-indigo-600/10 text-indigo-400 border-l-4 border-indigo-500' 
+                : 'text-slate-400 hover:text-white hover:bg-slate-900/30'
+            }`}
+          >
+            <Layers className="w-5 h-5" />
+            Allocations & Transfers
+          </button>
           
           <button
             onClick={() => setActiveTab('booking')}
@@ -95,16 +137,6 @@ export const App: React.FC = () => {
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-4 block mb-2">
               Other Modules
             </span>
-            <button
-              onClick={() => setActiveTab('placeholder')}
-              className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs text-slate-500 hover:text-slate-300 hover:bg-slate-900/10 transition-all text-left"
-            >
-              <span className="flex items-center gap-2">
-                <FolderLock className="w-4 h-4" />
-                Asset Directory (P2)
-              </span>
-              <ChevronRight className="w-3.5 h-3.5 opacity-40" />
-            </button>
             <button
               onClick={() => setActiveTab('placeholder')}
               className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs text-slate-500 hover:text-slate-300 hover:bg-slate-900/10 transition-all text-left"
@@ -218,44 +250,76 @@ export const App: React.FC = () => {
           {activeTab === 'booking' && <ResourceBooking />}
           {activeTab === 'maintenance' && <MaintenanceManagement />}
           
+          {/* Person 2 Features */}
+          {activeTab === 'directory' && profile && (
+            <AssetDirectory 
+              currentUser={profile} 
+              onNavigateToAllocations={handleNavigateToAllocations} 
+            />
+          )}
+          
+          {activeTab === 'allocations' && profile && (
+            <AllocationTransfer
+              currentUser={profile}
+              preselectedAssetId={preselectAssetId}
+              initialAction={preselectAction}
+              clearPreselect={clearPreselect}
+            />
+          )}
+          
           {/* Dashboard Tab mock preview */}
           {activeTab === 'dashboard' && (
-            <div className="space-y-6">
+            <div className="space-y-6 animate-fade-in">
               <div className="flex flex-col gap-1">
                 <h1 className="text-3xl font-extrabold text-white">Command Dashboard</h1>
                 <p className="text-slate-400">Organization-wide resource deployment stats.</p>
               </div>
 
               {/* KPI Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
                 <div className="glass-panel rounded-2xl p-6 border border-slate-900">
                   <span className="text-xs font-bold text-slate-500 uppercase">Available Assets</span>
                   <div className="flex items-baseline gap-2 mt-2">
                     <span className="text-4xl font-extrabold text-white">
                       {assets.filter(a => a.status === 'available').length}
                     </span>
-                    <span className="text-xs text-emerald-400">Active Directory</span>
+                  </div>
+                </div>
+
+                <div className="glass-panel rounded-2xl p-6 border border-slate-900">
+                  <span className="text-xs font-bold text-slate-500 uppercase">Allocated Assets</span>
+                  <div className="flex items-baseline gap-2 mt-2">
+                    <span className="text-4xl font-extrabold text-indigo-400">
+                      {assets.filter(a => a.status === 'allocated').length}
+                    </span>
                   </div>
                 </div>
 
                 <div className="glass-panel rounded-2xl p-6 border border-slate-900">
                   <span className="text-xs font-bold text-slate-500 uppercase">Under Maintenance</span>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-4xl font-extrabold text-indigo-400">
+                    <span className="text-4xl font-extrabold text-amber-400">
                       {assets.filter(a => a.status === 'under_maintenance').length}
                     </span>
-                    <span className="text-xs text-slate-500">In Kanban pipeline</span>
                   </div>
                 </div>
 
                 <div className="glass-panel rounded-2xl p-6 border border-slate-900">
-                  <span className="text-xs font-bold text-slate-500 uppercase">Pending Repairs</span>
+                  <span className="text-xs font-bold text-slate-500 uppercase">Booked Resources</span>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-4xl font-extrabold text-amber-400">
-                      {getMockData<MaintenanceRequest>('maintenance_requests').filter(r => r.status === 'pending').length}
+                    <span className="text-4xl font-extrabold text-emerald-400">
+                      {getMockData<Booking>('bookings').filter(b => b.status === 'upcoming').length}
                     </span>
-                    <span className="text-xs text-amber-500">Awaiting Approval</span>
                   </div>
+                </div>
+              </div>
+
+              {/* Overdue Banner */}
+              <div className="p-4 bg-rose-950/20 border border-rose-900/40 rounded-xl flex items-center gap-3">
+                <div className="w-2.5 h-2.5 bg-rose-500 rounded-full animate-ping" />
+                <div>
+                  <p className="text-sm font-semibold text-rose-350">3 Assets are Overdue for return</p>
+                  <p className="text-xs text-slate-400 mt-0.5">Please check expected return dates under the "Allocations & Transfers" tab to process outstanding returns.</p>
                 </div>
               </div>
 
@@ -265,7 +329,7 @@ export const App: React.FC = () => {
                 
                 <div className="space-y-3 max-h-[300px] overflow-y-auto">
                   {activities.length === 0 ? (
-                    <p className="text-xs text-slate-500 py-6 text-center">No logs generated yet. Schedule bookings or maintenance to trigger activity logs.</p>
+                    <p className="text-xs text-slate-500 py-6 text-center">No logs generated yet. Perform allocations, scheduling or maintenance to trigger activity logs.</p>
                   ) : (
                     activities.map(act => (
                       <div key={act.id} className="p-3 bg-slate-950/20 border border-slate-900 rounded-xl flex items-center justify-between text-xs">
@@ -295,7 +359,7 @@ export const App: React.FC = () => {
               </div>
               <h2 className="text-xl font-bold text-white">Under Construction by Team Partners</h2>
               <p className="text-xs text-slate-400 text-center max-w-sm">
-                This workspace is owned by other team roles (P1/P2/P4). Once they commit their folders, the router links will integrate seamlessly.
+                This workspace is owned by Person 4. Once they commit their folders, the router links will integrate seamlessly.
               </p>
             </div>
           )}
