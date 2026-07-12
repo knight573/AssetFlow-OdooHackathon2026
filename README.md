@@ -1,260 +1,292 @@
-# AssetFlow – Enterprise Asset & Resource Management System
+
 
 ## Overview
 
-**AssetFlow** is a modern Enterprise Asset & Resource Management System (ERP) designed to help organizations efficiently manage physical assets, shared resources, maintenance workflows, audits, and asset allocation through a centralized platform.
+**AssetFlow** is a modern Enterprise Asset & Resource Management System (ERP) that enables organizations to efficiently manage physical assets throughout their entire lifecycle.
 
-The system replaces spreadsheets and manual record-keeping with a secure, role-based application that provides complete visibility into asset ownership, availability, lifecycle, and operational activities.
+The platform replaces spreadsheets and manual record-keeping with a secure, scalable, and centralized solution that provides complete visibility into asset ownership, availability, maintenance, transfers, bookings, audits, and organizational operations.
+
+Whether used by educational institutions, hospitals, enterprises, manufacturing companies, or government organizations, AssetFlow streamlines asset management while improving operational efficiency and accountability.
 
 ---
 
-## Features
+## Key Features
 
-### Authentication & Role Management
+### Authentication & Authorization
 
-* Secure Email & Password Authentication
-* Employee Signup
-* Forgot Password
-* Session Management
-* Admin-controlled Role Assignment
-* Role-Based Access Control (RBAC)
+- Secure Email & Password Authentication
+- Employee Registration
+- Password Recovery
+- Session Management
+- Role-Based Access Control (RBAC)
+- Admin-controlled Role Assignment
+
+---
 
 ### Dashboard
 
-* Real-time KPI Cards
-* Asset Availability Overview
-* Active Allocations
-* Maintenance Status
-* Booking Statistics
-* Pending Transfers
-* Upcoming & Overdue Returns
-* Quick Action Shortcuts
+- Real-time KPI Dashboard
+- Asset Availability Overview
+- Active Asset Allocations
+- Maintenance Status
+- Booking Statistics
+- Pending Transfers
+- Upcoming & Overdue Returns
+- Quick Action Shortcuts
 
-### Organization Setup
+---
 
-#### Department Management
+### Organization Management
 
-* Create, Edit & Deactivate Departments
-* Parent Department Hierarchy
-* Assign Department Heads
+#### Departments
 
-#### Asset Category Management
+- Create, Update & Deactivate Departments
+- Parent-Child Department Hierarchy
+- Assign Department Heads
 
-* Create Asset Categories
-* Category-specific Custom Fields
-* Active/Inactive Status
+#### Asset Categories
+
+- Category Management
+- Custom Fields per Category
+- Active / Inactive Status
 
 #### Employee Directory
 
-* Employee Management
-* Department Assignment
-* Role Promotion
-* Employee Status Tracking
+- Employee Management
+- Department Assignment
+- Role Promotion
+- Employee Status Tracking
 
-### Asset Registration & Directory
+---
 
-* Asset Registration
-* Auto-generated Asset Tags
-* Serial Number Tracking
-* QR Code Support
-* Asset Images & Documents
-* Lifecycle Tracking
-* Search & Filtering
-* Asset History
+### Asset Management
 
-### Asset Allocation & Transfer
+- Asset Registration
+- Auto-generated Asset Tags
+- QR Code Support
+- Serial Number Tracking
+- Asset Images & Documents
+- Lifecycle Tracking
+- Asset History
+- Advanced Search & Filtering
 
-* Allocate Assets
-* Department Allocation
-* Expected Return Date
-* Conflict Detection
-* Transfer Approval Workflow
-* Asset Return Management
-* Condition Check-in
-* Overdue Return Detection
+---
+
+### Asset Allocation
+
+- Allocate Assets
+- Department Allocation
+- Expected Return Date
+- Asset Return Workflow
+- Condition Verification
+- Overdue Detection
+
+---
+
+### Asset Transfers
+
+- Transfer Request Workflow
+- Approval System
+- Asset Ownership Transfer
+- Transfer History
+
+---
 
 ### Resource Booking
 
-* Calendar-based Booking
-* Shared Resource Management
-* Time Slot Reservation
-* Booking Conflict Validation
-* Reschedule & Cancellation
-* Reminder Notifications
+- Calendar-based Booking
+- Shared Resource Reservation
+- Time Slot Scheduling
+- Booking Conflict Detection
+- Reschedule & Cancellation
+- Reminder Notifications
+
+---
 
 ### Maintenance Management
 
-* Raise Maintenance Requests
-* Priority Levels
-* Approval Workflow
-* Technician Assignment
-* Repair Tracking
-* Maintenance History
-* Automatic Asset Status Updates
+- Maintenance Request Portal
+- Priority Levels
+- Approval Workflow
+- Technician Assignment
+- Repair Tracking
+- Maintenance History
+- Automatic Asset Status Updates
 
-### Asset Audit
+---
 
-* Audit Cycle Creation
-* Auditor Assignment
-* Asset Verification
-* Missing & Damaged Asset Reporting
-* Auto-generated Discrepancy Reports
-* Audit History
+### Asset Audits
+
+- Audit Cycle Management
+- Auditor Assignment
+- Asset Verification
+- Missing & Damaged Asset Reporting
+- Discrepancy Reports
+- Audit History
+
+---
 
 ### Reports & Analytics
 
-* Asset Utilization Reports
-* Maintenance Analytics
-* Department-wise Allocation Reports
-* Booking Heatmaps
-* Asset Retirement Tracking
-* Exportable Reports
+- Asset Utilization Reports
+- Maintenance Analytics
+- Department-wise Allocation Reports
+- Booking Analytics
+- Asset Retirement Reports
+- Exportable Reports
 
-### Activity Logs & Notifications
+---
 
-* Real-time Notifications
-* Overdue Alerts
-* Transfer Notifications
-* Maintenance Updates
-* Booking Notifications
-* Complete Activity Logs
-* Audit Trail
+### Notifications & Activity Logs
+
+- Real-time Notifications
+- Transfer Alerts
+- Maintenance Updates
+- Booking Notifications
+- Overdue Return Alerts
+- Complete Audit Trail
+- Activity Logs
 
 ---
 
 # Asset Lifecycle
 
-Assets move through the following lifecycle:
+```text
+                     Available
+                         │
+      ┌──────────────────┼──────────────────┐
+      │                  │                  │
+ Allocated           Reserved       Under Maintenance
+      │                                   │
+      │                                   ▼
+      ├──────────────► Available ◄─────────┘
+      │
+      ▼
+Transfer Requested
+      │
+      ▼
+Approved Transfer
 
-```
-Available
-    │
-    ├──► Allocated
-    │         │
-    │         ├──► Available
-    │         └──► Transfer Requested
-    │
-    ├──► Reserved
-    │
-    ├──► Under Maintenance
-    │         │
-    │         └──► Available
-    │
-    ├──► Lost
-    ├──► Retired
-    └──► Disposed
+Additional States
+────────────────────────
+• Lost
+• Retired
+• Disposed
 ```
 
 ---
 
 # User Roles
 
-## Admin
-
-* Manage Departments
-* Manage Asset Categories
-* Manage Employees
-* Promote Employees to Asset Managers or Department Heads
-* Create Audit Cycles
-* View Organization-wide Reports
-
-## Asset Manager
-
-* Register Assets
-* Allocate Assets
-* Approve Transfers
-* Approve Maintenance Requests
-* Approve Asset Returns
-* Resolve Audit Discrepancies
-
-## Department Head
-
-* View Department Assets
-* Approve Allocation Requests
-* Approve Transfers
-* Book Shared Resources
-
-## Employee
-
-* View Assigned Assets
-* Book Resources
-* Raise Maintenance Requests
-* Initiate Returns
-* Request Asset Transfers
+| Role | Responsibilities |
+|------|------------------|
+| **Admin** | Manage departments, employees, categories, reports, and audit cycles |
+| **Asset Manager** | Register assets, allocate assets, approve transfers, maintenance, and returns |
+| **Department Head** | View department assets, approve allocation requests, approve transfers |
+| **Employee** | View assigned assets, request transfers, raise maintenance requests, book resources |
 
 ---
 
-# Basic Workflow
+# System Workflow
 
-1. Admin creates departments, categories, and employees.
-2. Employees register and receive the default Employee role.
-3. Admin promotes selected employees to Department Head or Asset Manager.
-4. Asset Manager registers new assets.
-5. Assets become **Available**.
-6. Assets are allocated to employees or departments.
-7. Shared resources can be booked without overlapping schedules.
-8. Maintenance requests follow an approval workflow.
-9. Assets are returned or transferred.
-10. Periodic audit cycles verify asset inventory.
-11. Reports, logs, and notifications provide operational visibility.
+```text
+Admin
+   │
+   ▼
+Create Departments & Categories
+   │
+   ▼
+Employees Register
+   │
+   ▼
+Admin Assigns Roles
+   │
+   ▼
+Asset Manager Registers Assets
+   │
+   ▼
+Assets Become Available
+   │
+   ▼
+Allocate Assets / Book Resources
+   │
+   ▼
+Maintenance / Transfers / Returns
+   │
+   ▼
+Periodic Asset Audits
+   │
+   ▼
+Reports, Notifications & Analytics
+```
 
 ---
 
 # ERP Modules
 
-* Authentication
-* Dashboard
-* Organization Setup
-* Employee Directory
-* Asset Management
-* Asset Allocation
-* Asset Transfers
-* Resource Booking
-* Maintenance Management
-* Asset Audits
-* Reports & Analytics
-* Notifications
-* Activity Logs
+- Authentication
+- Dashboard
+- Organization Management
+- Employee Directory
+- Asset Management
+- Asset Allocation
+- Asset Transfers
+- Resource Booking
+- Maintenance Management
+- Asset Audits
+- Reports & Analytics
+- Notifications
+- Activity Logs
 
 ---
 
-# Key Business Rules
+# Business Rules
 
-* Employees cannot assign themselves elevated roles.
-* Only Admin can promote users.
-* Assets cannot be allocated twice.
-* Transfer requests require approval.
-* Resource bookings cannot overlap.
-* Maintenance requires approval before work begins.
-* Audit cycles generate discrepancy reports automatically.
-* Overdue returns are detected automatically.
-* Every important action is logged.
+- Only **Admins** can assign or modify user roles.
+- Assets cannot be allocated to multiple users simultaneously.
+- Transfer requests require approval before execution.
+- Resource bookings cannot overlap.
+- Maintenance work begins only after approval.
+- Audit cycles automatically generate discrepancy reports.
+- Overdue asset returns are detected automatically.
+- Every critical system event is recorded in activity logs.
 
 ---
 
 # Project Objectives
 
-* Digitize enterprise asset management.
-* Reduce manual tracking errors.
-* Improve asset visibility.
-* Simplify maintenance workflows.
-* Enable conflict-free resource booking.
-* Support structured audits.
-* Provide actionable analytics.
-* Deliver a scalable ERP architecture.
+- Digitize enterprise asset management.
+- Improve asset visibility across the organization.
+- Reduce manual tracking errors.
+- Simplify maintenance workflows.
+- Enable conflict-free resource booking.
+- Support structured audit processes.
+- Deliver actionable business insights.
+- Provide a scalable ERP architecture.
 
 ---
 
 # Future Enhancements
 
-* QR Code Scanner
-* Barcode Integration
-* Mobile Application
-* Email & SMS Notifications
-* Predictive Maintenance
-* AI-powered Asset Utilization Analytics
-* Multi-Organization Support
-* Cloud Deployment
+- QR Code Scanner
+- Barcode Integration
+- Mobile Application
+- Email & SMS Notifications
+- Predictive Maintenance
+- AI-powered Asset Analytics
+- Multi-Organization Support
+- Cloud Deployment
 
 ---
 
+# Why AssetFlow?
+
+- Centralized enterprise asset management
+- Secure role-based architecture
+- Complete asset lifecycle tracking
+- Automated workflows and approvals
+- Comprehensive reporting & analytics
+- Scalable and maintainable ERP design
+- Suitable for organizations of any size
+
+---
