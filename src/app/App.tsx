@@ -158,13 +158,62 @@ export const App: React.FC = () => {
     }
   };
 
+  const checkOverdueAllocations = (allocationList: Allocation[], assetList: Asset[], currentUserId: string) => {
+    let notificationsAdded = false;
+    const notificationsList = getMockData<Notification>('notifications');
+    const now = new Date();
+
+    allocationList.forEach(al => {
+      const returnDate = al.expected_return_date || al.expected_return_at;
+      if (al.status === 'active' && returnDate && new Date(returnDate) < now) {
+        const assetObj = assetList.find(a => a.id === al.asset_id);
+        const uniqueMsg = `Asset Return Overdue Alert: ${assetObj?.tag} (${assetObj?.name}) was expected by ${new Date(returnDate).toLocaleDateString()}.`;
+        
+        if (!notificationsList.some(n => n.message === uniqueMsg)) {
+          notificationsList.push({
+            id: 'note-od-' + Math.random().toString(36).substring(2, 9),
+            user_id: al.profile_id || al.employee_id || currentUserId,
+            message: uniqueMsg,
+            is_read: false,
+            type: 'overdue_return',
+            created_at: now.toISOString()
+          });
+
+          al.status = 'overdue';
+          notificationsAdded = true;
+
+          const logMsg = `Asset Return Overdue Alert: ${assetObj?.tag} is overdue for return.`;
+          const allLogs = getMockData<ActivityLog>('activity_logs');
+          allLogs.push({
+            id: 'log-od-' + Math.random().toString(36).substring(2, 9),
+            actor_id: 'system',
+            action: 'return_overdue',
+            entity_type: 'allocation',
+            entity_id: al.id,
+            details: { asset_tag: assetObj?.tag, expected_date: returnDate, message: logMsg },
+            created_at: now.toISOString()
+          });
+          setMockData('activity_logs', allLogs);
+        }
+      }
+    });
+
+    if (notificationsAdded) {
+      setMockData('notifications', notificationsList);
+      setMockData('allocations', allocationList);
+      window.dispatchEvent(new CustomEvent('mock-db-change', { detail: { table: 'notifications' } }));
+    }
+  };
+
   useEffect(() => {
     if (profile) {
       const interval = setInterval(() => {
         const bList = getMockData<Booking>('bookings');
         const pList = getMockData<Profile>('profiles');
         const aList = getMockData<Asset>('assets');
+        const allocList = getMockData<Allocation>('allocations');
         checkUpcomingBookingReminders(bList, profile.id, pList, aList);
+        checkOverdueAllocations(allocList, aList, profile.id);
       }, 15000);
       return () => clearInterval(interval);
     }
