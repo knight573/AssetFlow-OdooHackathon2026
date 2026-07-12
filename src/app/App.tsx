@@ -10,6 +10,7 @@ import { ActivityLogs } from '../features/insights/ActivityLogs';
 import { Notifications } from '../features/insights/Notifications';
 import { DemoSimulator } from '../components/DemoSimulator';
 import { OrgSetup } from '../features/organization/OrgSetup';
+import { Login } from '../features/organization/Login';
 import { getMockData } from '../lib/mockDb';
 import { Asset, Booking, MaintenanceRequest, Notification, ActivityLog } from '../lib/types';
 import { ClipboardCheck, TrendingUp, History, Terminal, Landmark } from 'lucide-react';
@@ -20,7 +21,7 @@ import {
 } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const { profile, role, switchProfile, allProfiles, logout } = useAuth();
+  const { profile, role, switchProfile, allProfiles, logout, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'directory' | 'allocations' | 'booking' | 'maintenance' | 'audits' | 'reports' | 'logs' | 'notifications' | 'org'>('booking');
   const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -54,11 +55,30 @@ export const App: React.FC = () => {
   };
 
   useEffect(() => {
-    loadDashboardData();
-    const handleDbChange = () => loadDashboardData();
+    if (profile) {
+      loadDashboardData();
+    }
+    const handleDbChange = () => {
+      if (profile) loadDashboardData();
+    };
     window.addEventListener('mock-db-change', handleDbChange);
     return () => window.removeEventListener('mock-db-change', handleDbChange);
-  }, []);
+  }, [profile]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex h-screen w-screen items-center justify-center bg-[#050811] text-slate-400 font-sans">
+        <div className="animate-pulse flex flex-col items-center gap-3">
+          <div className="h-10 w-10 border-4 border-t-indigo-500 border-slate-900 rounded-full animate-spin"></div>
+          <p className="text-xs font-semibold">Configuring AssetFlow Session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return <Login />;
+  }
 
   const unreadNotificationsCount = notifications.filter(n => !n.is_read).length;
 
