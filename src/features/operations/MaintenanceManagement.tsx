@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../lib/auth';
 import { Asset, MaintenanceRequest, Profile } from '../../lib/types';
 import { getAssets, getMaintenanceRequests, createMaintenanceRequest, updateMaintenanceStatus } from './operationsApi';
-import { Wrench, Plus, User, AlertCircle, CheckCircle2, ShieldAlert, Sparkles, X } from 'lucide-react';
+import { Wrench, Plus, User, AlertCircle, CheckCircle2, ShieldAlert, Sparkles, X, History } from 'lucide-react';
 
 const STATUS_COLUMNS = [
   { id: 'pending', title: 'Pending Approval', color: 'border-amber-500/20 bg-amber-550/5', dot: 'bg-amber-500' },
   { id: 'approved', title: 'Approved', color: 'border-sky-500/20 bg-sky-550/5', dot: 'bg-sky-400' },
   { id: 'technician_assigned', title: 'Tech Assigned', color: 'border-indigo-500/20 bg-indigo-550/5', dot: 'bg-indigo-400' },
   { id: 'in_progress', title: 'In Progress', color: 'border-violet-500/20 bg-violet-550/5', dot: 'bg-violet-500' },
-  { id: 'resolved', title: 'Resolved', color: 'border-emerald-500/20 bg-emerald-550/5', dot: 'bg-emerald-500' }
+  { id: 'resolved', title: 'Resolved', color: 'border-emerald-500/20 bg-emerald-550/5', dot: 'bg-emerald-500' },
+  { id: 'rejected', title: 'Rejected', color: 'border-rose-500/20 bg-rose-550/5', dot: 'bg-rose-500' }
 ] as const;
 
 export const MaintenanceManagement: React.FC = () => {
@@ -22,6 +23,10 @@ export const MaintenanceManagement: React.FC = () => {
   const [formAssetId, setFormAssetId] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formPriority, setFormPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  const [formPhotoUrl, setFormPhotoUrl] = useState('');
+  
+  // Inspection History tab
+  const [historyAssetId, setHistoryAssetId] = useState('');
   
   // Technician Assignment Modal
   const [assigningRequestId, setAssigningRequestId] = useState<string | null>(null);
@@ -62,9 +67,10 @@ export const MaintenanceManagement: React.FC = () => {
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      await createMaintenanceRequest(formAssetId, profile.id, formDescription, formPriority);
+      await createMaintenanceRequest(formAssetId, profile.id, formDescription, formPriority, formPhotoUrl || null);
       setSuccessMessage("Maintenance request submitted successfully!");
       setFormDescription('');
+      setFormPhotoUrl('');
       setTimeout(() => {
         setIsNewModalOpen(false);
         setSuccessMessage(null);
@@ -159,7 +165,7 @@ export const MaintenanceManagement: React.FC = () => {
       )}
 
       {/* Kanban Board */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 overflow-x-auto pb-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4 overflow-x-auto pb-4">
         {STATUS_COLUMNS.map((column) => {
           const columnRequests = requests.filter((r) => r.status === column.id);
 
@@ -182,7 +188,7 @@ export const MaintenanceManagement: React.FC = () => {
               {/* Cards container */}
               <div className="flex-1 overflow-y-auto space-y-3.5 pr-1">
                 {columnRequests.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-48 text-slate-600 border border-dashed border-slate-900 rounded-xl p-4">
+                  <div className="flex flex-col items-center justify-center h-48 text-slate-655 border border-dashed border-slate-900 rounded-xl p-4">
                     <Wrench className="w-8 h-8 mb-1.5 opacity-30" />
                     <span className="text-[11px]">No requests</span>
                   </div>
@@ -220,9 +226,16 @@ export const MaintenanceManagement: React.FC = () => {
                         </div>
 
                         {/* Description */}
-                        <p className="text-[11px] text-slate-400 line-clamp-3 leading-relaxed">
+                        <p className="text-[11px] text-slate-450 line-clamp-3 leading-relaxed">
                           {req.issue_description}
                         </p>
+
+                        {/* Photo preview block */}
+                        {req.photo_url && (
+                          <div className="w-full h-24 rounded-lg overflow-hidden border border-slate-900 bg-slate-950 flex items-center justify-center">
+                            <img src={req.photo_url} alt="malfunction preview" className="object-cover w-full h-full" />
+                          </div>
+                        )}
 
                         {/* Raiser info */}
                         <div className="flex items-center gap-1.5 pt-2 border-t border-slate-950 text-[10px] text-slate-500">
@@ -371,6 +384,26 @@ export const MaintenanceManagement: React.FC = () => {
                 />
               </div>
 
+              {/* Photo URL Attachment */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Photo Attachment URL</label>
+                  <span className="text-[10px] text-slate-500 italic">Optional</span>
+                </div>
+                <input
+                  type="url"
+                  placeholder="e.g. https://images.unsplash.com/photo-1588508065123-287b28e013da?w=600"
+                  value={formPhotoUrl}
+                  onChange={(e) => setFormPhotoUrl(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-900 rounded-xl px-4 py-3 text-slate-200 text-sm focus:border-indigo-500 focus:outline-none transition-all placeholder:text-slate-600"
+                />
+                {formPhotoUrl && (
+                  <div className="mt-2 relative w-20 h-20 rounded-xl border border-slate-800 overflow-hidden bg-slate-950 flex items-center justify-center">
+                    <img src={formPhotoUrl} alt="Preview" className="object-cover w-full h-full" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
+                  </div>
+                )}
+              </div>
+
               {/* Buttons */}
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-900">
                 <button
@@ -446,6 +479,91 @@ export const MaintenanceManagement: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Asset Maintenance History Inspector Panel */}
+      <div className="glass-panel rounded-2xl p-6 space-y-4">
+        <div>
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <History className="w-5 h-5 text-indigo-400" />
+            Asset Maintenance History
+          </h2>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Audit log of all repair requests, technician assignments, and resolutions for a selected asset.
+          </p>
+        </div>
+
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 space-y-1.5">
+            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Select Asset to Inspect</label>
+            <select
+              value={historyAssetId}
+              onChange={(e) => setHistoryAssetId(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-900 rounded-xl px-4 py-3 text-slate-200 text-sm focus:border-indigo-500 focus:outline-none cursor-pointer"
+            >
+              <option value="" className="bg-slate-950 text-slate-100">-- Choose an Asset --</option>
+              {assets.map((a) => (
+                <option key={a.id} value={a.id} className="bg-slate-950 text-slate-100">
+                  {a.name} ({a.tag})
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {historyAssetId && (
+          <div className="border border-slate-900 rounded-xl overflow-hidden bg-slate-950/20">
+            {requests.filter(r => r.asset_id === historyAssetId).length === 0 ? (
+              <p className="p-6 text-sm text-slate-500 italic text-center">No maintenance history logged for this asset.</p>
+            ) : (
+              <div className="divide-y divide-slate-900">
+                {requests.filter(r => r.asset_id === historyAssetId).map((r) => {
+                  const start = new Date(r.created_at);
+                  const end = r.resolved_at ? new Date(r.resolved_at) : null;
+                  
+                  return (
+                    <div key={r.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                            r.status === 'resolved' 
+                              ? 'bg-emerald-950 text-emerald-300 border border-emerald-900'
+                              : r.status === 'rejected'
+                              ? 'bg-rose-950 text-rose-300 border border-rose-900'
+                              : 'bg-amber-950 text-amber-300 border border-amber-900'
+                          }`}>
+                            {r.status.toUpperCase()}
+                          </span>
+                          <span className="font-bold text-white text-sm">{r.issue_description}</span>
+                        </div>
+                        <p className="text-slate-400">
+                          Raised by: <span className="text-slate-350">{r.raiser?.name || 'Employee'}</span> · Created: <span className="text-slate-350">{start.toLocaleString()}</span>
+                        </p>
+                        {r.technician_name && (
+                          <p className="text-slate-400">
+                            Technician: <span className="text-indigo-400">{r.technician_name}</span>
+                          </p>
+                        )}
+                        {r.photo_url && (
+                          <div className="mt-2 w-16 h-16 rounded overflow-hidden border border-slate-800">
+                            <img src={r.photo_url} alt="Attachment Preview" className="object-cover w-full h-full" />
+                          </div>
+                        )}
+                      </div>
+                      
+                      {end && (
+                        <div className="text-right text-slate-450 shrink-0">
+                          <p className="font-semibold text-slate-300">Resolved Date</p>
+                          <p>{end.toLocaleString()}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

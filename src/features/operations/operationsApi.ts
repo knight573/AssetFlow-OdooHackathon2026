@@ -269,7 +269,8 @@ export async function createMaintenanceRequest(
   assetId: string,
   raisedBy: string,
   description: string,
-  priority: 'low' | 'medium' | 'high'
+  priority: 'low' | 'medium' | 'high',
+  photoUrl: string | null = null
 ): Promise<MaintenanceRequest> {
   const id = crypto.randomUUID();
   const created_at = new Date().toISOString();
@@ -279,7 +280,7 @@ export async function createMaintenanceRequest(
     raised_by: raisedBy,
     issue_description: description,
     priority,
-    photo_url: null,
+    photo_url: photoUrl,
     status: 'pending',
     technician_name: null,
     approved_by: null,
@@ -296,6 +297,7 @@ export async function createMaintenanceRequest(
         raised_by: raisedBy,
         issue_description: description,
         priority,
+        photo_url: photoUrl,
         status: 'pending'
       });
     if (error) {

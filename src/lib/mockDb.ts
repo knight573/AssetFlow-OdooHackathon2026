@@ -135,6 +135,22 @@ const INITIAL_AUDIT_ITEMS: AuditItem[] = [
 
 export function initMockDb(force = false) {
   if (!force && localStorage.getItem('assetflow_init') === 'true') {
+    // Merge missing assets from the seeds dynamically
+    const key = 'assetflow_assets';
+    const existingStr = localStorage.getItem(key);
+    if (existingStr) {
+      const existing = JSON.parse(existingStr);
+      let updated = false;
+      INITIAL_ASSETS.forEach(seedAsset => {
+        if (!existing.some((a: any) => a.id === seedAsset.id)) {
+          existing.push(seedAsset);
+          updated = true;
+        }
+      });
+      if (updated) {
+        localStorage.setItem(key, JSON.stringify(existing));
+      }
+    }
     return;
   }
 
