@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../lib/auth';
 import { getMockData, setMockData } from '../../lib/mockDb';
 import { Profile, Department, UserRole } from '../../lib/types';
-import { Boxes, Mail, UserPlus, LogIn, Sparkles, CheckCircle2, Lock, HelpCircle, Shield, User, Info, Settings, Plus, ToggleLeft, ToggleRight, UserCheck, ArrowRight } from 'lucide-react';
+import { Boxes, Mail, UserPlus, LogIn, Sparkles, CheckCircle2, Lock, HelpCircle, Shield, User, Info, Settings, Plus, ToggleLeft, ToggleRight, UserCheck, ArrowRight, KeyRound } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { login, signup } = useAuth();
@@ -15,6 +15,13 @@ export const Login: React.FC = () => {
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   
+  // OTP Verification States
+  const [otpSent, setOtpSent] = useState(false);
+  const [generatedOtp, setGeneratedOtp] = useState('');
+  const [enteredOtp, setEnteredOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
   // Admin credentials verification for console access
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
@@ -34,7 +41,6 @@ export const Login: React.FC = () => {
 
   // Recovery outputs
   const [recoveredEmail, setRecoveredEmail] = useState<string | null>(null);
-  const [recoveryPassword, setRecoveryPassword] = useState<string | null>(null);
   
   // Status states
   const [loading, setLoading] = useState(false);
@@ -145,11 +151,59 @@ export const Login: React.FC = () => {
     }
   };
 
+  // OTP Send Trigger
+  const handleSendOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    const list = getMockData<Profile>('profiles');
+    const found = list.find(p => p.email.toLowerCase() === email.trim().toLowerCase());
+    if (!found) {
+      setErrorMsg('No profile found with this email address.');
+      return;
+    }
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedOtp(code);
+    setOtpSent(true);
+    setSuccessMsg(`A unique OTP has been generated and sent to: ${email}`);
+  };
+
+  // OTP Reset submit
+  const handleOtpResetSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    if (enteredOtp !== generatedOtp) {
+      setErrorMsg('Incorrect OTP code. Please verify the code and try again.');
+      return;
+    }
+    if (!newPassword || newPassword !== confirmPassword) {
+      setErrorMsg('Passwords do not match. Please verify.');
+      return;
+    }
+
+    const list = getMockData<Profile>('profiles');
+    const updated = list.map(p => p.email.toLowerCase() === email.trim().toLowerCase() ? { ...p, password: newPassword } : p);
+    setMockData('profiles', updated);
+
+    // Reset recovery state and redirect
+    setOtpSent(false);
+    setGeneratedOtp('');
+    setEnteredOtp('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setEmail('');
+    setMode('signin');
+    setSuccessMsg('Your password has been reset successfully! Please sign in using your new password.');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     setSuccessMsg(null);
-    setRecoveryPassword(null);
     setRecoveredEmail(null);
     setLoading(true);
 
@@ -166,15 +220,6 @@ export const Login: React.FC = () => {
         }
         await signup(email.trim(), name.trim(), password);
         setSuccessMsg('Account registered successfully! Welcome to AssetFlow.');
-      } else if (mode === 'forgot') {
-        const list = getMockData<Profile>('profiles');
-        const found = list.find(p => p.email.toLowerCase() === email.trim().toLowerCase());
-        if (!found) {
-          throw new Error('No profile found with this email.');
-        }
-        const pwd = found.password || (found.role === 'admin' ? 'admin123' : 'employee123');
-        setRecoveryPassword(pwd);
-        setSuccessMsg(`Recovery successful: Your password is shown below.`);
       } else if (mode === 'forgot_email') {
         if (!name.trim()) {
           throw new Error('Please enter your full name.');
@@ -227,16 +272,19 @@ export const Login: React.FC = () => {
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
               <span>{successMsg}</span>
             </div>
-            {recoveryPassword && (
-              <div className="mt-2 p-2.5 bg-slate-950/80 rounded-lg border border-emerald-800/20 text-center animate-slide-up">
-                <span className="text-[10px] text-slate-500 block uppercase font-bold">Your Password</span>
-                <span className="text-sm font-mono text-emerald-400 font-extrabold">{recoveryPassword}</span>
-              </div>
-            )}
             {recoveredEmail && (
               <div className="mt-2 p-2.5 bg-slate-950/80 rounded-lg border border-emerald-800/20 text-center animate-slide-up">
                 <span className="text-[10px] text-slate-500 block uppercase font-bold">Your Email Address</span>
                 <span className="text-sm font-mono text-emerald-400 font-extrabold">{recoveredEmail}</span>
+              </div>
+            )}
+            {otpSent && generatedOtp && (
+              <div className="mt-2 p-2.5 bg-indigo-950/85 rounded-lg border border-indigo-800/30 text-center animate-slide-up flex flex-col gap-1">
+                <span className="text-[9px] text-indigo-400 uppercase font-bold tracking-wider">Simulated OTP Inbox</span>
+                <div className="flex items-center justify-center gap-2">
+                  <KeyRound className="w-4 h-4 text-indigo-400" />
+                  <span className="text-sm font-mono text-indigo-300 font-extrabold tracking-widest">{generatedOtp}</span>
+                </div>
               </div>
             )}
           </div>
@@ -358,8 +406,8 @@ export const Login: React.FC = () => {
                     return (
                       <tr key={emp.id} className="hover:bg-slate-900/5 transition-colors">
                         <td className="p-3.5 font-bold text-white text-xs">{emp.name}</td>
-                        <td className="p-3.5 text-slate-350">{emp.email}</td>
-                        <td className="p-3.5 text-slate-400">{dep ? dep.name : <span className="italic text-slate-600 text-[10px]">Unassigned</span>}</td>
+                        <td className="p-3.5 text-slate-355">{emp.email}</td>
+                        <td className="p-3.5 text-slate-400">{dep ? dep.name : <span className="italic text-slate-650 text-[10px]">Unassigned</span>}</td>
                         <td className="p-3.5">
                           <select
                             value={emp.role}
@@ -450,8 +498,89 @@ export const Login: React.FC = () => {
           </form>
         )}
 
-        {/* VIEW 3: STANDARD LOGIN / SIGNUP / PASSWORD RECOVERY FORMS */}
-        {mode !== 'admin_console' && (
+        {/* VIEW 3: FORGOT PASSWORD - OTP RESET FLOW */}
+        {mode === 'forgot' && (
+          <div className="space-y-4 animate-fade-in">
+            <div className="text-center space-y-1">
+              <h3 className="text-sm font-bold text-white flex items-center justify-center gap-1.5">
+                <KeyRound className="w-4 h-4 text-indigo-400" />
+                Reset Your Password
+              </h3>
+              <p className="text-[11px] text-slate-450">We will verify your identity with a secure OTP code.</p>
+            </div>
+
+            {!otpSent ? (
+              <form onSubmit={handleSendOtp} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Corporate Email Address</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="e.g. kravi1610@gmail.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full p-3 pl-4 rounded-xl bg-slate-950/60 border border-slate-850 focus:border-indigo-500 text-xs font-semibold text-slate-200 outline-none transition"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-indigo-650 hover:bg-indigo-600 rounded-xl font-extrabold text-xs text-white shadow-lg transition cursor-pointer"
+                >
+                  Send OTP Code
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleOtpResetSubmit} className="space-y-4 animate-slide-up">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase font-mono">6-Digit OTP Code</label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={6}
+                    placeholder="Enter 6-digit OTP code"
+                    value={enteredOtp}
+                    onChange={(e) => setEnteredOtp(e.target.value.replace(/\D/g, ''))}
+                    className="w-full p-3 pl-4 rounded-xl bg-slate-950/60 border border-slate-850 focus:border-indigo-500 text-xs font-semibold text-slate-200 text-center tracking-widest outline-none transition"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">New Password</label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="Enter new password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full p-3 pl-4 rounded-xl bg-slate-950/60 border border-slate-850 focus:border-indigo-500 text-xs font-semibold text-slate-200 outline-none transition"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Confirm Password</label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="Confirm new password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full p-3 pl-4 rounded-xl bg-slate-950/60 border border-slate-850 focus:border-indigo-500 text-xs font-semibold text-slate-200 outline-none transition"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-indigo-650 hover:bg-indigo-600 rounded-xl font-extrabold text-xs text-white shadow-lg transition cursor-pointer"
+                >
+                  Verify & Reset Password
+                </button>
+              </form>
+            )}
+          </div>
+        )}
+
+        {/* VIEW 4: SIGN IN, SIGN UP, FORGOT EMAIL ID */}
+        {mode !== 'admin_console' && mode !== 'forgot' && (
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === 'signup' && (
               <div className="space-y-1">
@@ -460,7 +589,7 @@ export const Login: React.FC = () => {
                   <input
                     type="text"
                     required
-                    placeholder="e.g. John Doe"
+                    placeholder="e.g. Ravi Kumar"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="w-full p-3 pl-4 rounded-xl bg-slate-950/60 border border-slate-850 focus:border-indigo-500 text-xs font-semibold text-slate-200 outline-none transition"
@@ -476,7 +605,7 @@ export const Login: React.FC = () => {
                   <input
                     type="email"
                     required
-                    placeholder="e.g. employee@company.com"
+                    placeholder="e.g. kravi1610@gmail.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full p-3 pl-4 rounded-xl bg-slate-950/60 border border-slate-850 focus:border-indigo-500 text-xs font-semibold text-slate-200 outline-none transition"
@@ -485,7 +614,7 @@ export const Login: React.FC = () => {
               </div>
             )}
 
-            {mode !== 'forgot' && mode !== 'forgot_email' && (
+            {mode !== 'forgot_email' && (
               <div className="space-y-1">
                 <div className="flex justify-between items-center">
                   <label className="text-[10px] font-bold text-slate-500 uppercase">Password</label>
@@ -498,14 +627,13 @@ export const Login: React.FC = () => {
                           setErrorMsg(null);
                           setSuccessMsg(null);
                           setRecoveredEmail(null);
-                          setRecoveryPassword(null);
                           setName('');
                         }}
                         className="text-[10px] text-indigo-400 hover:underline font-bold"
                       >
                         Forgot Email ID?
                       </button>
-                      <span className="text-[10px] text-slate-600">|</span>
+                      <span className="text-[10px] text-slate-650">|</span>
                       <button
                         type="button"
                         onClick={() => {
@@ -513,8 +641,8 @@ export const Login: React.FC = () => {
                           setErrorMsg(null);
                           setSuccessMsg(null);
                           setRecoveredEmail(null);
-                          setRecoveryPassword(null);
                           setEmail('');
+                          setOtpSent(false);
                         }}
                         className="text-[10px] text-indigo-400 hover:underline font-bold"
                       >
@@ -546,20 +674,10 @@ export const Login: React.FC = () => {
                   <LogIn className="w-4 h-4" />
                   Sign In
                 </>
-              ) : mode === 'signup' ? (
+              ) : (
                 <>
                   <UserPlus className="w-4 h-4" />
                   Register Account
-                </>
-              ) : mode === 'forgot' ? (
-                <>
-                  <HelpCircle className="w-4 h-4" />
-                  Recover Password
-                </>
-              ) : (
-                <>
-                  <Mail className="w-4 h-4" />
-                  Recover Email ID
                 </>
               )}
             </button>
@@ -575,9 +693,9 @@ export const Login: React.FC = () => {
                 setErrorMsg(null);
                 setSuccessMsg(null);
                 setRecoveredEmail(null);
-                setRecoveryPassword(null);
                 setIsAdminAuthenticated(false);
                 setCurrentAdminProfile(null);
+                setOtpSent(false);
                 setPassword('');
                 setEmail('');
                 setName('');
@@ -598,7 +716,7 @@ export const Login: React.FC = () => {
                     setErrorMsg(null);
                     setSuccessMsg(null);
                     setRecoveredEmail(null);
-                    setRecoveryPassword(null);
+                    setOtpSent(false);
                     setPassword('');
                     setEmail('');
                     setName('');
@@ -634,14 +752,14 @@ export const Login: React.FC = () => {
               <Info className="w-4 h-4 text-indigo-400 shrink-0" />
               <span className="text-[10px] font-bold text-indigo-350 uppercase">Preseeded Team Accounts</span>
             </div>
-            <div className="text-[9px] text-slate-400 leading-normal space-y-0.5 max-h-40 overflow-y-auto">
+            <div className="text-[9px] text-slate-400 leading-normal space-y-0.5 max-h-40 overflow-y-auto font-medium">
               <p>1. <strong>Aadarsh Nath</strong> (Admin) — <code>aadarsh@company.com</code> | <code>admin123</code></p>
               <p>2. <strong>Yash Raj</strong> (Admin) — <code>yash@company.com</code> | <code>admin123</code></p>
               <p>3. <strong>Fahad Hassan</strong> (Admin) — <code>fahad@company.com</code> | <code>admin123</code></p>
               <p>4. <strong>Mrinal Kishor</strong> (Admin) — <code>mrinal@company.com</code> | <code>admin123</code></p>
               <p>5. <strong>Sarah Jenkins</strong> (Asset Mgr) — <code>sarah@company.com</code> | <code>employee123</code></p>
               <p>6. <strong>Amit Kumar</strong> (Dept Head) — <code>amit@company.com</code> | <code>employee123</code></p>
-              <p>7. <strong>Neha Sharma</strong> (Employee) — <code>neha@company.com</code> | <code>employee123</code></p>
+              <p>7. <strong>Ravi Kumar</strong> (Employee) — <code>kravi1610@gmail.com</code> | <code>employee123</code></p>
               <p>8. <strong>Rahul Verma</strong> (Employee) — <code>rahul@company.com</code> | <code>employee123</code></p>
               <p>9. <strong>Deepa Patel</strong> (Employee) — <code>deepa@company.com</code> | <code>employee123</code></p>
             </div>

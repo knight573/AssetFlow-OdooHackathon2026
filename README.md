@@ -312,7 +312,7 @@ The local database is seeded with 9 default user accounts representing various o
 | **Mrinal Kishor** | Admin | `mrinal@company.com` | `admin123` |
 | **Sarah Jenkins** | Asset Manager | `sarah@company.com` | `employee123` |
 | **Amit Kumar** | Department Head | `amit@company.com` | `employee123` |
-| **Neha Sharma** | Employee | `neha@company.com` | `employee123` |
+| **Ravi Kumar** | Employee | `kravi1610@gmail.com` | `employee123` |
 | **Rahul Verma** | Employee | `rahul@company.com` | `employee123` |
 | **Deepa Patel** | Employee | `deepa@company.com` | `employee123` |
 
