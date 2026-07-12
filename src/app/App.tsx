@@ -265,7 +265,7 @@ export const App: React.FC = () => {
                   onChange={(e) => switchProfile(e.target.value)}
                   className="bg-transparent text-slate-100 text-xs font-semibold focus:outline-none cursor-pointer"
                 >
-                  {allProfiles.map(p => (
+                  {allProfiles.filter(p => p.role !== 'admin' || p.id === profile?.id).map(p => (
                     <option key={p.id} value={p.id} className="bg-slate-950 text-slate-100">
                       {p.name} ({p.role.toUpperCase()})
                     </option>

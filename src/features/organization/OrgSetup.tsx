@@ -519,7 +519,8 @@ export const OrgSetup: React.FC = () => {
                         <select
                           value={emp.role}
                           onChange={(e) => handleRoleChange(emp.id, e.target.value as UserRole)}
-                          className="bg-slate-900 border border-slate-800 rounded-lg p-1.5 text-xs text-slate-200 font-medium focus:outline-none"
+                          disabled={emp.role === 'admin' && emp.id !== currentActor?.id}
+                          className="bg-slate-900 border border-slate-800 rounded-lg p-1.5 text-xs text-slate-200 font-medium focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           <option value="employee">Employee</option>
                           <option value="department_head">Department Head</option>
@@ -542,7 +543,8 @@ export const OrgSetup: React.FC = () => {
                     <td className="p-4 text-right">
                       <button
                         onClick={() => handleToggleEmployeeStatus(emp.id, emp.status)}
-                        className="p-1.5 hover:bg-slate-850 border border-slate-900 rounded-lg text-slate-400 hover:text-white transition"
+                        disabled={emp.role === 'admin' && emp.id !== currentActor?.id}
+                        className="p-1.5 hover:bg-slate-850 border border-slate-900 rounded-lg text-slate-400 hover:text-white transition disabled:opacity-40 disabled:cursor-not-allowed"
                         title="Toggle Access"
                       >
                         {emp.status === 'active' ? (
