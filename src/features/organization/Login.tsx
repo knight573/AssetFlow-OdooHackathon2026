@@ -2,30 +2,34 @@ import React, { useState } from 'react';
 import { useAuth } from '../../lib/auth';
 import { getMockData } from '../../lib/mockDb';
 import { Profile } from '../../lib/types';
-import { Boxes, Mail, UserPlus, LogIn, Sparkles, CheckCircle2, Lock, HelpCircle, Shield, User } from 'lucide-react';
+import { Boxes, Mail, UserPlus, LogIn, Sparkles, CheckCircle2, Lock, HelpCircle, Shield, User, Info } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { login, signup } = useAuth();
   
-  // View mode: signin, signup, or forgot
-  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
+  // View mode: signin, signup, forgot, or forgot_email
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot' | 'forgot_email'>('signin');
   
   // Form values
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   
+  // Recovery outputs
+  const [recoveredEmail, setRecoveredEmail] = useState<string | null>(null);
+  const [recoveryPassword, setRecoveryPassword] = useState<string | null>(null);
+  
   // Status states
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-  const [recoveryPassword, setRecoveryPassword] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     setSuccessMsg(null);
     setRecoveryPassword(null);
+    setRecoveredEmail(null);
     setLoading(true);
 
     try {
@@ -43,13 +47,24 @@ export const Login: React.FC = () => {
         setSuccessMsg('Account registered successfully! Welcome to AssetFlow.');
       } else if (mode === 'forgot') {
         const list = getMockData<Profile>('profiles');
-        const found = list.find(p => p.email.toLowerCase() === email.toLowerCase());
+        const found = list.find(p => p.email.toLowerCase() === email.trim().toLowerCase());
         if (!found) {
           throw new Error('No profile found with this email.');
         }
         const pwd = found.password || 'password123';
         setRecoveryPassword(pwd);
-        setSuccessMsg(`Recovery initiated: Your active password is shown below.`);
+        setSuccessMsg(`Recovery successful: Your password is shown below.`);
+      } else if (mode === 'forgot_email') {
+        if (!name.trim()) {
+          throw new Error('Please enter your full name.');
+        }
+        const list = getMockData<Profile>('profiles');
+        const found = list.find(p => p.name.toLowerCase() === name.trim().toLowerCase());
+        if (!found) {
+          throw new Error('No profile found with this name. Check spelling or try registering.');
+        }
+        setRecoveredEmail(found.email);
+        setSuccessMsg(`Recovery successful: Your registered email is shown below.`);
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'An error occurred during authentication.');
@@ -92,9 +107,15 @@ export const Login: React.FC = () => {
               <span>{successMsg}</span>
             </div>
             {recoveryPassword && (
-              <div className="mt-2 p-2 bg-slate-950/80 rounded-lg border border-emerald-800/20 text-center">
+              <div className="mt-2 p-2.5 bg-slate-950/80 rounded-lg border border-emerald-800/20 text-center animate-slide-up">
                 <span className="text-[10px] text-slate-500 block uppercase font-bold">Your Password</span>
                 <span className="text-sm font-mono text-emerald-400 font-extrabold">{recoveryPassword}</span>
+              </div>
+            )}
+            {recoveredEmail && (
+              <div className="mt-2 p-2.5 bg-slate-950/80 rounded-lg border border-emerald-800/20 text-center animate-slide-up">
+                <span className="text-[10px] text-slate-500 block uppercase font-bold">Your Email Address</span>
+                <span className="text-sm font-mono text-emerald-400 font-extrabold">{recoveredEmail}</span>
               </div>
             )}
           </div>
@@ -102,7 +123,7 @@ export const Login: React.FC = () => {
 
         {/* Form elements */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          {mode === 'signup' && (
+          {(mode === 'signup' || mode === 'forgot_email') && (
             <div className="space-y-1">
               <label className="text-[10px] font-bold text-slate-500 uppercase">Full Name</label>
               <div className="relative">
@@ -118,37 +139,58 @@ export const Login: React.FC = () => {
             </div>
           )}
 
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase">Corporate Email</label>
-            <div className="relative">
-              <input
-                type="email"
-                required
-                placeholder="e.g. employee@company.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full p-3 pl-4 rounded-xl bg-slate-950/60 border border-slate-850 focus:border-indigo-500 text-xs font-semibold text-slate-200 outline-none transition"
-              />
+          {mode !== 'forgot_email' && (
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-500 uppercase">Corporate Email</label>
+              <div className="relative">
+                <input
+                  type="email"
+                  required
+                  placeholder="e.g. employee@company.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full p-3 pl-4 rounded-xl bg-slate-950/60 border border-slate-850 focus:border-indigo-500 text-xs font-semibold text-slate-200 outline-none transition"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
-          {mode !== 'forgot' && (
+          {mode !== 'forgot' && mode !== 'forgot_email' && (
             <div className="space-y-1">
               <div className="flex justify-between items-center">
                 <label className="text-[10px] font-bold text-slate-500 uppercase">Password</label>
                 {mode === 'signin' && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMode('forgot');
-                      setErrorMsg(null);
-                      setSuccessMsg(null);
-                      setRecoveryPassword(null);
-                    }}
-                    className="text-[10px] text-indigo-400 hover:underline font-bold"
-                  >
-                    Forgot Password?
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode('forgot_email');
+                        setErrorMsg(null);
+                        setSuccessMsg(null);
+                        setRecoveredEmail(null);
+                        setRecoveryPassword(null);
+                        setName('');
+                      }}
+                      className="text-[10px] text-indigo-400 hover:underline font-bold"
+                    >
+                      Forgot Email ID?
+                    </button>
+                    <span className="text-[10px] text-slate-600">|</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMode('forgot');
+                        setErrorMsg(null);
+                        setSuccessMsg(null);
+                        setRecoveredEmail(null);
+                        setRecoveryPassword(null);
+                        setEmail('');
+                      }}
+                      className="text-[10px] text-indigo-400 hover:underline font-bold"
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
                 )}
               </div>
               <div className="relative">
@@ -179,63 +221,19 @@ export const Login: React.FC = () => {
                 <UserPlus className="w-4 h-4" />
                 Register Account
               </>
-            ) : (
+            ) : mode === 'forgot' ? (
               <>
                 <HelpCircle className="w-4 h-4" />
                 Recover Password
               </>
+            ) : (
+              <>
+                <Mail className="w-4 h-4" />
+                Recover Email ID
+              </>
             )}
           </button>
         </form>
-
-        {/* Quick Simulator Logins */}
-        {mode === 'signin' && (
-          <div className="space-y-2 border-t border-slate-900 pt-4">
-            <span className="text-[10px] font-bold text-slate-500 uppercase block text-center mb-1">Quick Simulator Logins</span>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={async () => {
-                  setErrorMsg(null);
-                  setSuccessMsg(null);
-                  setLoading(true);
-                  try {
-                    await login('admin@company.com', 'password123');
-                    setSuccessMsg('Logged in as Administrator!');
-                  } catch (err: any) {
-                    setErrorMsg(err.message);
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-                className="py-2.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 hover:border-rose-500/40 text-rose-450 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <Shield className="w-3.5 h-3.5" />
-                Admin Sandbox
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  setErrorMsg(null);
-                  setSuccessMsg(null);
-                  setLoading(true);
-                  try {
-                    await login('priya@company.com', 'password123');
-                    setSuccessMsg('Logged in as Employee!');
-                  } catch (err: any) {
-                    setErrorMsg(err.message);
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-                className="py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 hover:border-indigo-500/40 text-indigo-400 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
-              >
-                <User className="w-3.5 h-3.5" />
-                Employee Sandbox
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Toggle Mode Switcher link */}
         <div className="text-center pt-2 border-t border-slate-900 flex flex-col gap-2">
@@ -245,8 +243,11 @@ export const Login: React.FC = () => {
                 setMode('signin');
                 setErrorMsg(null);
                 setSuccessMsg(null);
+                setRecoveredEmail(null);
                 setRecoveryPassword(null);
                 setPassword('');
+                setEmail('');
+                setName('');
               }}
               className="text-xs text-indigo-400 font-bold hover:underline cursor-pointer"
             >
@@ -262,7 +263,11 @@ export const Login: React.FC = () => {
                   setMode('signup');
                   setErrorMsg(null);
                   setSuccessMsg(null);
+                  setRecoveredEmail(null);
+                  setRecoveryPassword(null);
                   setPassword('');
+                  setEmail('');
+                  setName('');
                 }}
                 className="text-indigo-400 font-bold hover:underline cursor-pointer"
               >
@@ -270,6 +275,21 @@ export const Login: React.FC = () => {
               </button>
             </p>
           )}
+        </div>
+
+        {/* Reference Seed accounts directory helper note */}
+        <div className="p-3 bg-indigo-950/10 border border-indigo-950/30 rounded-xl space-y-1">
+          <div className="flex items-center gap-1.5">
+            <Info className="w-4 h-4 text-indigo-400 shrink-0" />
+            <span className="text-[10px] font-bold text-indigo-350 uppercase">Preseeded Team Accounts (Forgot recovery directory)</span>
+          </div>
+          <div className="text-[9px] text-slate-400 leading-normal space-y-0.5">
+            <p>1. <strong>Aadarsh Nath</strong> (Admin) — Default password: <code>password123</code></p>
+            <p>2. <strong>Yash Raj</strong> (Asset Manager) — Default password: <code>password123</code></p>
+            <p>3. <strong>Priya Shah</strong> (Employee) — Default password: <code>password123</code></p>
+            <p>4. <strong>Arjun Nair</strong> (Department Head) — Default password: <code>password123</code></p>
+            <p>5. <strong>Sarah Jenkins</strong> (Employee) — Default password: <code>password123</code></p>
+          </div>
         </div>
 
       </div>

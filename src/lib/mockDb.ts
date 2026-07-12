@@ -15,14 +15,16 @@ export const SEED_ASSET_CHAIR = 'a3333333-3333-3333-3333-333333333333';
 export const SEED_ASSET_ROOM = 'a4444444-4444-4444-4444-444444444444';
 export const SEED_ASSET_VAN = 'a5555555-5555-5555-5555-555555555555';
 
-export const SEED_USER_PRIYA = 'u1111111-1111-1111-1111-111111111111';
-export const SEED_USER_ARJUN = 'u2222222-2222-2222-2222-222222222222';
-export const SEED_USER_SARAH = 'u3333333-3333-3333-3333-333333333333';
-export const SEED_USER_ADMIN = 'u4444444-4444-4444-4444-444444444444';
+// 5 Core Persons
+export const SEED_USER_AADARSH = 'u0000000-0000-0000-0000-000000000000';
+export const SEED_USER_YASH = 'u1111111-1111-1111-1111-111111111111';
+export const SEED_USER_PRIYA = 'u2222222-2222-2222-2222-222222222222';
+export const SEED_USER_ARJUN = 'u3333333-3333-3333-3333-333333333333';
+export const SEED_USER_SARAH = 'u4444444-4444-4444-4444-444444444444';
 
 const INITIAL_DEPARTMENTS: Department[] = [
   { id: SEED_DEP_ENG, name: 'Engineering', head_id: SEED_USER_ARJUN, parent_department_id: null, status: 'active', created_at: new Date().toISOString() },
-  { id: SEED_DEP_FAC, name: 'Facilities', head_id: SEED_USER_SARAH, parent_department_id: null, status: 'active', created_at: new Date().toISOString() },
+  { id: SEED_DEP_FAC, name: 'Facilities', head_id: SEED_USER_YASH, parent_department_id: null, status: 'active', created_at: new Date().toISOString() },
   { id: SEED_DEP_OPS, name: 'Field Ops (east)', head_id: null, parent_department_id: SEED_DEP_FAC, status: 'inactive', created_at: new Date().toISOString() },
 ];
 
@@ -33,10 +35,11 @@ const INITIAL_CATEGORIES: Category[] = [
 ];
 
 const INITIAL_PROFILES: Profile[] = [
+  { id: SEED_USER_AADARSH, name: 'Aadarsh Nath', email: 'aadarsh@company.com', department_id: SEED_DEP_ENG, role: 'admin', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
+  { id: SEED_USER_YASH, name: 'Yash Raj', email: 'yash@company.com', department_id: SEED_DEP_FAC, role: 'asset_manager', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
   { id: SEED_USER_PRIYA, name: 'Priya Shah', email: 'priya@company.com', department_id: SEED_DEP_ENG, role: 'employee', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
   { id: SEED_USER_ARJUN, name: 'Arjun Nair', email: 'arjun@company.com', department_id: SEED_DEP_ENG, role: 'department_head', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
-  { id: SEED_USER_SARAH, name: 'Sarah Jenkins', email: 'sarah@company.com', department_id: SEED_DEP_FAC, role: 'asset_manager', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
-  { id: SEED_USER_ADMIN, name: 'Admin User', email: 'admin@company.com', department_id: SEED_DEP_FAC, role: 'admin', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
+  { id: SEED_USER_SARAH, name: 'Sarah Jenkins', email: 'sarah@company.com', department_id: SEED_DEP_FAC, role: 'employee', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
 ];
 
 const INITIAL_ASSETS: Asset[] = [
@@ -78,7 +81,7 @@ const INITIAL_MAINTENANCE: MaintenanceRequest[] = [
     photo_url: null,
     status: 'in_progress',
     technician_name: 'Rohan Das',
-    approved_by: SEED_USER_SARAH,
+    approved_by: SEED_USER_YASH,
     created_at: new Date(Date.now() - 86400000).toISOString(),
     resolved_at: null
   }
@@ -90,7 +93,7 @@ const INITIAL_ALLOCATIONS = [
     asset_id: SEED_ASSET_LAPTOP,
     employee_id: SEED_USER_PRIYA,
     department_id: SEED_DEP_ENG,
-    allocated_by: SEED_USER_SARAH,
+    allocated_by: SEED_USER_YASH,
     allocated_at: new Date(Date.now() - 30 * 86400000).toISOString(),
     expected_return_date: new Date(Date.now() + 10 * 86400000).toISOString().split('T')[0],
     returned_at: null,
@@ -101,7 +104,7 @@ const INITIAL_ALLOCATIONS = [
 ];
 
 const INITIAL_AUDIT_CYCLES: AuditCycle[] = [
-  { id: 'ac1', name: 'Q3 Engineering Audit', department_id: SEED_DEP_ENG, location: 'Bengaluru', date_range_start: '2026-07-01', date_range_end: '2026-07-31', status: 'open', created_by: SEED_USER_ADMIN, created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() }
+  { id: 'ac1', name: 'Q3 Engineering Audit', department_id: SEED_DEP_ENG, location: 'Bengaluru', date_range_start: '2026-07-01', date_range_end: '2026-07-31', status: 'open', created_by: SEED_USER_AADARSH, created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() }
 ];
 
 const INITIAL_AUDIT_AUDITORS: AuditAuditor[] = [
@@ -115,6 +118,8 @@ const INITIAL_AUDIT_ITEMS: AuditItem[] = [
 
 export function initMockDb(force = false) {
   if (!force && localStorage.getItem('assetflow_init') === 'true') {
+    // Clear and force-reinitialize profiles so the 5 core users always load with password123
+    localStorage.setItem('assetflow_profiles', JSON.stringify(INITIAL_PROFILES));
     return;
   }
 
