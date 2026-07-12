@@ -338,6 +338,6 @@ Developed and maintained by:
 - **Yash Raj**
 - **Fahad Hassan**
 - **Aadarsh Nath**
-- **Mrinal Kishor**
+- **Mirnal Kishor**
 
 > "Innovation is the calling card of the future, and collaboration is the key that unlocks it." — Unknown
