@@ -318,3 +318,7 @@ The local database is seeded with 9 default user accounts representing various o
 
 
 ---
+
+### Contributors
+
+Developed and maintained by **Yash Raj**.
