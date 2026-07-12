@@ -448,3 +448,22 @@ html:not(.dark) .ring-\[\#0b0f19\] {
 html:not(.dark) .border-slate-800\/80 {
   border-color: #cbd5e1 !important;
 }
+
+/* Premium globally polished button animations & hover scaling responses */
+button, 
+.btn-transition {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+button:active {
+  transform: translateY(0) scale(0.97);
+}
+
+html:not(.dark) button:hover {
+  filter: brightness(0.96) contrast(1.05);
+}
