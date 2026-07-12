@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { supabase, isSupabaseConfigured } from './supabase';
 import { insertMockRow } from './mockDb';
 import { ActivityLog, Notification } from './types';
@@ -65,14 +64,9 @@ export async function logActivity(params: {
         });
       }
     } catch (err) {
-      console.warn("Failed to log activity to Supabase database:", err);
+      console.warn("Failed to write log to Supabase:", err);
     }
   }
 }
 
 export default logActivity;
-=======
-import { db } from './supabase';
-
-export const logActivity = db.logActivity;
->>>>>>> origin/feature/insights

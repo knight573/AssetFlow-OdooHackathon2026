@@ -1,7 +1,6 @@
 {
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
-<<<<<<< HEAD
     "target": "es2023",
     "lib": ["ES2023", "DOM"],
     "module": "esnext",
@@ -13,23 +12,10 @@
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": false,
-=======
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
-    "skipLibCheck": true,
-
-    /* Bundler mode */
-    "moduleResolution": "Bundler",
-    "allowImportingTsExtensions": true,
-    "isolatedModules": true,
->>>>>>> origin/feature/insights
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
 
-<<<<<<< HEAD
     /* Relaxed Linting & Strictness for Hackathon */
     "strict": false,
     "strictNullChecks": false,
@@ -38,14 +24,6 @@
     "noImplicitAny": false,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true
-=======
-    /* Linting */
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
->>>>>>> origin/feature/insights
   },
   "include": ["src"]
 }
