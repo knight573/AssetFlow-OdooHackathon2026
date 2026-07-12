@@ -23,6 +23,11 @@ export const Login: React.FC = () => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  // Inline editing states for Login directory
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
+  const [editingEmail, setEditingEmail] = useState('');
+
   // Admin credentials verification for console access
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
@@ -164,6 +169,24 @@ export const Login: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSaveEdit = (empId: string) => {
+    if (!editingName.trim() || !editingEmail.trim()) return;
+    const list = getMockData<Profile>('profiles');
+    const updated = list.map(p => p.id === empId ? { ...p, name: editingName.trim(), email: editingEmail.trim() } : p);
+    setMockData('profiles', updated);
+    
+    // Update underlying Supabase database profiles if configured
+    if (isSupabaseConfigured) {
+      supabase.from('profiles').update({ name: editingName.trim(), email: editingEmail.trim() }).eq('id', empId).catch(err => {
+        console.error("Supabase edit sync error:", err);
+      });
+    }
+
+    setEditingId(null);
+    setSuccessMsg('Employee details updated successfully!');
+    loadDirectoryData();
   };
 
   // OTP Send Trigger (Generates OTP, effect will submit the form)
@@ -439,8 +462,30 @@ export const Login: React.FC = () => {
                     
                     return (
                       <tr key={emp.id} className="hover:bg-slate-900/5 transition-colors">
-                        <td className="p-3.5 font-bold text-white text-xs">{emp.name}</td>
-                        <td className="p-3.5 text-slate-350">{emp.email}</td>
+                        <td className="p-3.5 font-bold text-white text-xs">
+                          {editingId === emp.id ? (
+                            <input
+                              type="text"
+                              value={editingName}
+                              onChange={(e) => setEditingName(e.target.value)}
+                              className="bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 text-xs text-white outline-none focus:border-indigo-500 w-28 font-medium"
+                            />
+                          ) : (
+                            emp.name
+                          )}
+                        </td>
+                        <td className="p-3.5 text-slate-350">
+                          {editingId === emp.id ? (
+                            <input
+                              type="email"
+                              value={editingEmail}
+                              onChange={(e) => setEditingEmail(e.target.value)}
+                              className="bg-slate-950 border border-slate-800 rounded px-1.5 py-0.5 text-xs text-white outline-none focus:border-indigo-500 w-36 font-medium"
+                            />
+                          ) : (
+                            emp.email
+                          )}
+                        </td>
                         <td className="p-3.5 text-slate-400">{dep ? dep.name : <span className="italic text-slate-650 text-[10px]">Unassigned</span>}</td>
                         <td className="p-3.5">
                           <select
@@ -465,18 +510,51 @@ export const Login: React.FC = () => {
                           </span>
                         </td>
                         <td className="p-3.5 text-right">
-                          <button
-                            onClick={() => handleToggleEmployeeStatus(emp.id, emp.status)}
-                            disabled={isOtherAdmin}
-                            className="p-1 hover:bg-slate-850 border border-slate-900 rounded-lg text-slate-400 hover:text-white transition disabled:opacity-40 disabled:cursor-not-allowed"
-                            title="Toggle Status"
-                          >
-                            {emp.status === 'active' ? (
-                              <UserCheck className="w-4 h-4 text-emerald-400" />
+                          <div className="flex items-center justify-end gap-1.5">
+                            {editingId === emp.id ? (
+                              <>
+                                <button
+                                  onClick={() => handleSaveEdit(emp.id)}
+                                  className="px-2 py-0.5 bg-emerald-950 hover:bg-emerald-900 border border-emerald-900 rounded text-emerald-400 hover:text-emerald-250 transition font-bold text-[10px]"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={() => setEditingId(null)}
+                                  className="px-2 py-0.5 bg-slate-900 hover:bg-slate-850 border border-slate-805 rounded text-slate-400 hover:text-white transition font-bold text-[10px]"
+                                >
+                                  X
+                                </button>
+                              </>
                             ) : (
-                              <UserCheck className="w-4 h-4 text-slate-650" />
+                              <>
+                                <button
+                                  onClick={() => {
+                                    if (isOtherAdmin) return;
+                                    setEditingId(emp.id);
+                                    setEditingName(emp.name);
+                                    setEditingEmail(emp.email);
+                                  }}
+                                  disabled={isOtherAdmin}
+                                  className="px-2 py-0.5 hover:bg-slate-850 border border-slate-800 rounded text-slate-350 hover:text-white transition disabled:opacity-40 disabled:cursor-not-allowed font-bold text-[10px]"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleToggleEmployeeStatus(emp.id, emp.status)}
+                                  disabled={isOtherAdmin}
+                                  className="p-1 hover:bg-slate-850 border border-slate-900 rounded-lg text-slate-400 hover:text-white transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                  title="Toggle Status"
+                                >
+                                  {emp.status === 'active' ? (
+                                    <UserCheck className="w-4 h-4 text-emerald-400" />
+                                  ) : (
+                                    <UserCheck className="w-4 h-4 text-slate-650" />
+                                  )}
+                                </button>
+                              </>
                             )}
-                          </button>
+                          </div>
                         </td>
                       </tr>
                     );

@@ -22,6 +22,11 @@ export const OrgSetup: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
+  // Inline editing states for Employees
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
+  const [editingEmail, setEditingEmail] = useState('');
+
   // Form States - Departments
   const [newDepName, setNewDepName] = useState('');
   const [newDepParentId, setNewDepParentId] = useState('');
@@ -163,6 +168,20 @@ export const OrgSetup: React.FC = () => {
       triggerFeedback(`Employee status updated to ${nextStatus}`, 'success');
     } catch (err) {
       triggerFeedback('Failed to update status', 'error');
+    }
+  };
+
+  const handleSaveEdit = async (empId: string) => {
+    if (!editingName.trim() || !editingEmail.trim()) return;
+    try {
+      const rawList = JSON.parse(localStorage.getItem('assetflow_profiles') || '[]') as Profile[];
+      const updated = rawList.map(p => p.id === empId ? { ...p, name: editingName.trim(), email: editingEmail.trim() } : p);
+      localStorage.setItem('assetflow_profiles', JSON.stringify(updated));
+      window.dispatchEvent(new CustomEvent('mock-db-change', { detail: { table: 'profiles' } }));
+      triggerFeedback('Employee details updated successfully!', 'success');
+      setEditingId(null);
+    } catch (err) {
+      triggerFeedback('Failed to update employee details', 'error');
     }
   };
 
@@ -499,10 +518,29 @@ export const OrgSetup: React.FC = () => {
                       <div className="w-9 h-9 rounded-full bg-slate-900 flex items-center justify-center font-bold text-indigo-400 border border-slate-850">
                         {emp.name.charAt(0)}
                       </div>
-                      <div className="flex flex-col">
-                        <span className="font-bold text-white text-sm">{emp.name}</span>
-                        <span className="text-[10px] text-slate-500">{emp.email}</span>
-                      </div>
+                      {editingId === emp.id ? (
+                        <div className="flex flex-col gap-1.5">
+                          <input
+                            type="text"
+                            value={editingName}
+                            onChange={(e) => setEditingName(e.target.value)}
+                            className="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-white outline-none focus:border-indigo-500"
+                            placeholder="Name"
+                          />
+                          <input
+                            type="email"
+                            value={editingEmail}
+                            onChange={(e) => setEditingEmail(e.target.value)}
+                            className="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-white outline-none focus:border-indigo-500"
+                            placeholder="Email"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex flex-col">
+                          <span className="font-bold text-white text-sm">{emp.name}</span>
+                          <span className="text-[10px] text-slate-500">{emp.email}</span>
+                        </div>
+                      )}
                     </td>
 
                     <td className="p-4">
@@ -541,18 +579,51 @@ export const OrgSetup: React.FC = () => {
                     </td>
 
                     <td className="p-4 text-right">
-                      <button
-                        onClick={() => handleToggleEmployeeStatus(emp.id, emp.status)}
-                        disabled={emp.role === 'admin' && emp.id !== currentActor?.id}
-                        className="p-1.5 hover:bg-slate-850 border border-slate-900 rounded-lg text-slate-400 hover:text-white transition disabled:opacity-40 disabled:cursor-not-allowed"
-                        title="Toggle Access"
-                      >
-                        {emp.status === 'active' ? (
-                          <UserCheck className="w-5 h-5 text-emerald-400" />
+                      <div className="flex items-center justify-end gap-2">
+                        {editingId === emp.id ? (
+                          <>
+                            <button
+                              onClick={() => handleSaveEdit(emp.id)}
+                              className="px-2.5 py-1 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 rounded-lg text-emerald-400 hover:text-emerald-200 transition font-bold text-[10px] tracking-wide"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setEditingId(null)}
+                              className="px-2.5 py-1 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-lg text-slate-400 hover:text-white transition font-bold text-[10px] tracking-wide"
+                            >
+                              Cancel
+                            </button>
+                          </>
                         ) : (
-                          <UserCheck className="w-5 h-5 text-slate-650" />
+                          <>
+                            <button
+                              onClick={() => {
+                                if (emp.role === 'admin' && emp.id !== currentActor?.id) return;
+                                setEditingId(emp.id);
+                                setEditingName(emp.name);
+                                setEditingEmail(emp.email);
+                              }}
+                              disabled={emp.role === 'admin' && emp.id !== currentActor?.id}
+                              className="px-2.5 py-1 hover:bg-slate-850 border border-slate-800 rounded-lg text-slate-350 hover:text-white transition disabled:opacity-40 disabled:cursor-not-allowed font-bold text-[10px]"
+                            >
+                              Edit Info
+                            </button>
+                            <button
+                              onClick={() => handleToggleEmployeeStatus(emp.id, emp.status)}
+                              disabled={emp.role === 'admin' && emp.id !== currentActor?.id}
+                              className="p-1.5 hover:bg-slate-850 border border-slate-900 rounded-lg text-slate-400 hover:text-white transition disabled:opacity-40 disabled:cursor-not-allowed"
+                              title="Toggle Access"
+                            >
+                              {emp.status === 'active' ? (
+                                <UserCheck className="w-5 h-5 text-emerald-400" />
+                              ) : (
+                                <UserCheck className="w-5 h-5 text-slate-650" />
+                              )}
+                            </button>
+                          </>
                         )}
-                      </button>
+                      </div>
                     </td>
 
                   </tr>
