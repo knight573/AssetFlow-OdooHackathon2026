@@ -348,7 +348,7 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
           { label: 'Available', value: stats.available, color: 'border-emerald-500/20 text-emerald-400 bg-emerald-950/10' },
           { label: 'Allocated', value: stats.allocated, color: 'border-indigo-500/20 text-indigo-400 bg-indigo-950/10' },
           { label: 'Under Repair', value: stats.maintenance, color: 'border-amber-500/20 text-amber-400 bg-amber-950/10' },
-          { label: 'Portfolio Value', value: `$${stats.totalValue.toLocaleString()}`, color: 'border-violet-500/20 text-violet-400 bg-violet-950/10' }
+          { label: 'Portfolio Value', value: `₹${stats.totalValue.toLocaleString()}`, color: 'border-violet-500/20 text-violet-400 bg-violet-950/10' }
         ].map((c, i) => (
           <div key={i} className={`p-5 rounded-2xl border glass-card ${c.color} shadow-sm`}>
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{c.label}</p>
@@ -442,7 +442,7 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5">Acquisition Cost ($)</label>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5">Acquisition Cost (₹)</label>
                   <input
                     type="number"
                     step="0.01"
@@ -837,7 +837,7 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
                                   </span>
                                   {asset.acquisition_cost !== undefined && asset.acquisition_cost !== null && (
                                     <p className="text-[11px] text-slate-400 font-semibold pt-1">
-                                      Cost: <span className="text-emerald-400">${asset.acquisition_cost.toLocaleString()}</span>
+                                      Cost: <span className="text-emerald-400">₹{asset.acquisition_cost.toLocaleString()}</span>
                                     </p>
                                   )}
                                   {asset.acquisition_date && (
