@@ -690,7 +690,7 @@ export default function AllocationTransfer({
                           {assets.find(a => a.id === t.asset_id)?.tag || 'Asset'}
                         </span>
                         <span className="text-[9px] text-slate-500">
-                          {new Date(t.requested_at).toLocaleDateString()}
+                          {new Date(t.requested_at || t.created_at).toLocaleDateString()}
                         </span>
                       </div>
                       
@@ -701,12 +701,12 @@ export default function AllocationTransfer({
                       <div className="flex items-center justify-between text-xs py-1 px-2.5 rounded bg-slate-950 border border-slate-850">
                         <div>
                           <p className="text-[9px] text-slate-500 uppercase font-semibold">From Holder</p>
-                          <p className="font-semibold text-slate-350">{getProfileName(t.from_profile_id)}</p>
+                          <p className="font-semibold text-slate-355">{getProfileName(t.from_profile_id || t.from_employee_id || '')}</p>
                         </div>
                         <ArrowRightLeft className="h-4 w-4 text-slate-600 mx-3" />
                         <div>
                           <p className="text-[9px] text-slate-500 uppercase font-semibold">Recipient Target</p>
-                          <p className="font-semibold text-indigo-300">{getProfileName(t.to_profile_id)}</p>
+                          <p className="font-semibold text-indigo-300">{getProfileName(t.to_profile_id || t.to_employee_id || '')}</p>
                         </div>
                       </div>
 
@@ -768,8 +768,8 @@ export default function AllocationTransfer({
                         <td className="py-3 font-semibold text-slate-300">
                           {getAssetTagAndName(t.asset_id)}
                         </td>
-                        <td className="py-3">{getProfileName(t.from_profile_id)}</td>
-                        <td className="py-3 text-slate-300">{getProfileName(t.to_profile_id)}</td>
+                        <td className="py-3">{getProfileName(t.from_profile_id || t.from_employee_id || '')}</td>
+                        <td className="py-3 text-slate-300">{getProfileName(t.to_profile_id || t.to_employee_id || '')}</td>
                         <td className="py-3">
                           <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                             t.status === 'approved' 

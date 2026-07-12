@@ -1,0 +1,451 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../lib/auth';
+import { Asset, MaintenanceRequest, Profile } from '../../lib/types';
+import { getAssets, getMaintenanceRequests, createMaintenanceRequest, updateMaintenanceStatus } from './operationsApi';
+import { Wrench, Plus, User, AlertCircle, CheckCircle2, ShieldAlert, Sparkles, X } from 'lucide-react';
+
+const STATUS_COLUMNS = [
+  { id: 'pending', title: 'Pending Approval', color: 'border-amber-500/20 bg-amber-550/5', dot: 'bg-amber-500' },
+  { id: 'approved', title: 'Approved', color: 'border-sky-500/20 bg-sky-550/5', dot: 'bg-sky-400' },
+  { id: 'technician_assigned', title: 'Tech Assigned', color: 'border-indigo-500/20 bg-indigo-550/5', dot: 'bg-indigo-400' },
+  { id: 'in_progress', title: 'In Progress', color: 'border-violet-500/20 bg-violet-550/5', dot: 'bg-violet-500' },
+  { id: 'resolved', title: 'Resolved', color: 'border-emerald-500/20 bg-emerald-550/5', dot: 'bg-emerald-500' }
+] as const;
+
+export const MaintenanceManagement: React.FC = () => {
+  const { profile } = useAuth();
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [requests, setRequests] = useState<(MaintenanceRequest & { asset?: Asset; raiser?: Profile })[]>([]);
+  
+  // Modals / Inputs
+  const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  const [formAssetId, setFormAssetId] = useState('');
+  const [formDescription, setFormDescription] = useState('');
+  const [formPriority, setFormPriority] = useState<'low' | 'medium' | 'high'>('medium');
+  
+  // Technician Assignment Modal
+  const [assigningRequestId, setAssigningRequestId] = useState<string | null>(null);
+  const [techName, setTechName] = useState('');
+  
+  const [isLoading, setIsLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const loadData = async () => {
+    try {
+      const aList = await getAssets();
+      setAssets(aList);
+      if (aList.length > 0 && !formAssetId) {
+        setFormAssetId(aList[0].id);
+      }
+      
+      const rList = await getMaintenanceRequests();
+      setRequests(rList);
+    } catch (err) {
+      console.error("Error loading maintenance data:", err);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+
+    // Listen for DB updates
+    const handleDbChange = () => loadData();
+    window.addEventListener('mock-db-change', handleDbChange);
+    return () => window.removeEventListener('mock-db-change', handleDbChange);
+  }, []);
+
+  const handleRaiseRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profile) return;
+
+    setIsLoading(true);
+    setErrorMessage(null);
+    try {
+      await createMaintenanceRequest(formAssetId, profile.id, formDescription, formPriority);
+      setSuccessMessage("Maintenance request submitted successfully!");
+      setFormDescription('');
+      setTimeout(() => {
+        setIsNewModalOpen(false);
+        setSuccessMessage(null);
+      }, 1500);
+    } catch (err: any) {
+      setErrorMessage(err.message || "Failed to submit request.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleStatusUpdate = async (id: string, status: MaintenanceRequest['status']) => {
+    if (!profile) return;
+    
+    // Check role permission
+    const isAuthorized = profile.role === 'admin' || profile.role === 'asset_manager';
+    if (!isAuthorized) {
+      alert("Unauthorized! Only Asset Managers or Admins can modify maintenance status.");
+      return;
+    }
+
+    try {
+      if (status === 'technician_assigned') {
+        setAssigningRequestId(id);
+        return;
+      }
+
+      await updateMaintenanceStatus(id, status, profile.id);
+      setSuccessMessage(`Request status updated to ${status}`);
+      setTimeout(() => setSuccessMessage(null), 2500);
+    } catch (err: any) {
+      setErrorMessage(err.message || "Failed to update status.");
+    }
+  };
+
+  const handleAssignTechnician = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profile || !assigningRequestId) return;
+
+    try {
+      await updateMaintenanceStatus(assigningRequestId, 'technician_assigned', profile.id, {
+        technicianName: techName
+      });
+      setSuccessMessage("Technician assigned!");
+      setTechName('');
+      setAssigningRequestId(null);
+      setTimeout(() => setSuccessMessage(null), 2500);
+    } catch (err: any) {
+      setErrorMessage(err.message || "Failed to assign technician.");
+    }
+  };
+
+  const canManage = profile?.role === 'admin' || profile?.role === 'asset_manager';
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-white bg-clip-text bg-gradient-to-r from-indigo-200 to-indigo-400">
+            Maintenance Management
+          </h1>
+          <p className="text-slate-400 mt-1">
+            Track asset health, approve repair requests, and assign service technicians.
+          </p>
+        </div>
+        <div>
+          <button
+            onClick={() => setIsNewModalOpen(true)}
+            className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white px-4 py-2.5 rounded-xl font-medium shadow-lg hover:shadow-indigo-500/25 transition-all"
+          >
+            <Plus className="w-5 h-5" />
+            Raise Maintenance Request
+          </button>
+        </div>
+      </div>
+
+      {/* Role Reminder Alert */}
+      {!canManage && (
+        <div className="p-3 bg-amber-950/20 border border-amber-900/40 rounded-xl flex items-center gap-2.5 text-amber-400 text-xs">
+          <ShieldAlert className="w-4.5 h-4.5 text-amber-500" />
+          <span>You are viewing as an <strong>{profile?.role}</strong>. Only <strong>Asset Managers</strong> or <strong>Admins</strong> can move requests through the repair approval pipelines.</span>
+        </div>
+      )}
+
+      {/* Success banner */}
+      {successMessage && (
+        <div className="p-3.5 bg-emerald-950/40 border border-emerald-900/50 text-emerald-300 rounded-xl flex items-center gap-2.5 text-sm">
+          <CheckCircle2 className="w-4.5 h-4.5 text-emerald-400" />
+          <span>{successMessage}</span>
+        </div>
+      )}
+
+      {/* Kanban Board */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 overflow-x-auto pb-4">
+        {STATUS_COLUMNS.map((column) => {
+          const columnRequests = requests.filter((r) => r.status === column.id);
+
+          return (
+            <div
+              key={column.id}
+              className={`flex flex-col min-w-[240px] h-[650px] rounded-2xl border p-4 bg-slate-950/20 ${column.color}`}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-slate-900 mb-4">
+                <div className="flex items-center gap-2">
+                  <span className={`w-2.5 h-2.5 rounded-full ${column.dot}`} />
+                  <h3 className="font-bold text-sm text-slate-200">{column.title}</h3>
+                </div>
+                <span className="text-xs font-bold text-slate-500 bg-slate-900 px-2 py-0.5 rounded-md">
+                  {columnRequests.length}
+                </span>
+              </div>
+
+              {/* Cards container */}
+              <div className="flex-1 overflow-y-auto space-y-3.5 pr-1">
+                {columnRequests.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-48 text-slate-600 border border-dashed border-slate-900 rounded-xl p-4">
+                    <Wrench className="w-8 h-8 mb-1.5 opacity-30" />
+                    <span className="text-[11px]">No requests</span>
+                  </div>
+                ) : (
+                  columnRequests.map((req) => {
+                    const isHigh = req.priority === 'high';
+                    const isMedium = req.priority === 'medium';
+                    
+                    return (
+                      <div
+                        key={req.id}
+                        className="p-4 rounded-xl border border-slate-800/80 bg-slate-950/45 hover:border-slate-700/80 transition-all space-y-3 relative group"
+                      >
+                        {/* Header */}
+                        <div className="flex items-start justify-between gap-1">
+                          <div className="space-y-0.5">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                              {req.asset?.tag || 'Asset'}
+                            </span>
+                            <h4 className="font-bold text-xs text-white leading-tight">
+                              {req.asset?.name || 'Unknown Item'}
+                            </h4>
+                          </div>
+                          
+                          {/* Priority badge */}
+                          <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded uppercase ${
+                            isHigh 
+                              ? 'bg-rose-950/60 text-rose-400 border border-rose-900/40' 
+                              : isMedium 
+                                ? 'bg-amber-950/60 text-amber-400 border border-amber-900/40' 
+                                : 'bg-emerald-950/60 text-emerald-400 border border-emerald-900/40'
+                          }`}>
+                            {req.priority}
+                          </span>
+                        </div>
+
+                        {/* Description */}
+                        <p className="text-[11px] text-slate-400 line-clamp-3 leading-relaxed">
+                          {req.issue_description}
+                        </p>
+
+                        {/* Raiser info */}
+                        <div className="flex items-center gap-1.5 pt-2 border-t border-slate-950 text-[10px] text-slate-500">
+                          <User className="w-3 h-3 text-slate-600" />
+                          <span>By: {req.raiser?.name || 'Employee'}</span>
+                        </div>
+
+                        {/* Technician assigned label */}
+                        {req.technician_name && (
+                          <div className="flex items-center gap-1 text-[10px] text-indigo-400 bg-indigo-950/30 px-2 py-1 rounded border border-indigo-950">
+                            <Sparkles className="w-3 h-3" />
+                            <span>Tech: {req.technician_name}</span>
+                          </div>
+                        )}
+
+                        {/* Kanban workflow actions (restricted to Managers) */}
+                        {canManage && (
+                          <div className="pt-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                            {req.status === 'pending' && (
+                              <div className="flex gap-1.5">
+                                <button
+                                  onClick={() => handleStatusUpdate(req.id, 'approved')}
+                                  className="flex-1 text-[9px] font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-900/30 py-1 rounded hover:bg-emerald-900/40 transition-all"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => handleStatusUpdate(req.id, 'rejected')}
+                                  className="text-[9px] font-bold text-rose-400 bg-rose-950/40 border border-rose-900/30 px-2 py-1 rounded hover:bg-rose-900/40 transition-all"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            )}
+                            
+                            {req.status === 'approved' && (
+                              <button
+                                onClick={() => handleStatusUpdate(req.id, 'technician_assigned')}
+                                className="w-full text-[9px] font-bold text-indigo-400 bg-indigo-950/40 border border-indigo-900/30 py-1.5 rounded hover:bg-indigo-900/40 transition-all"
+                              >
+                                Assign Technician
+                              </button>
+                            )}
+
+                            {req.status === 'technician_assigned' && (
+                              <button
+                                onClick={() => handleStatusUpdate(req.id, 'in_progress')}
+                                className="w-full text-[9px] font-bold text-violet-400 bg-violet-950/40 border border-violet-900/30 py-1.5 rounded hover:bg-violet-900/40 transition-all"
+                              >
+                                Start Repairs
+                              </button>
+                            )}
+
+                            {req.status === 'in_progress' && (
+                              <button
+                                onClick={() => handleStatusUpdate(req.id, 'resolved')}
+                                className="w-full text-[9px] font-bold text-emerald-400 bg-emerald-950/40 border border-emerald-900/30 py-1.5 rounded hover:bg-emerald-900/40 transition-all"
+                              >
+                                Complete & Resolve
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* New Maintenance Request Drawer Modal */}
+      {isNewModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="w-full max-w-lg overflow-hidden glass-panel rounded-2xl shadow-2xl border border-slate-800/80 bg-[#0c101d]">
+            
+            <div className="flex items-center justify-between p-6 border-b border-slate-900">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Wrench className="w-5 h-5 text-indigo-400" />
+                Raise Repair Request
+              </h3>
+              <button
+                onClick={() => setIsNewModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-900 transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleRaiseRequest} className="p-6 space-y-4">
+              
+              {/* Asset Select */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select Affected Asset</label>
+                <select
+                  required
+                  value={formAssetId}
+                  onChange={(e) => setFormAssetId(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-900 rounded-xl px-4 py-3 text-slate-200 text-sm focus:border-indigo-500 focus:outline-none transition-all"
+                >
+                  {assets.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name} ({a.tag}) — Status: {a.status}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Priority Select */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Priority Level</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['low', 'medium', 'high'] as const).map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => setFormPriority(p)}
+                      className={`py-2 px-3 rounded-lg text-xs font-bold capitalize border transition-all ${
+                        formPriority === p 
+                          ? p === 'high' 
+                            ? 'bg-rose-950/60 border-rose-600 text-rose-300' 
+                            : p === 'medium'
+                              ? 'bg-amber-950/60 border-amber-600 text-amber-300'
+                              : 'bg-emerald-950/60 border-emerald-600 text-emerald-300'
+                          : 'bg-slate-950 border-slate-900 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Describe the Issue</label>
+                <textarea
+                  required
+                  rows={4}
+                  placeholder="Provide details about the malfunction or damage..."
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-900 rounded-xl px-4 py-3 text-slate-200 text-sm focus:border-indigo-500 focus:outline-none transition-all placeholder:text-slate-600"
+                />
+              </div>
+
+              {/* Buttons */}
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-900">
+                <button
+                  type="button"
+                  onClick={() => setIsNewModalOpen(false)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900 font-medium transition-all text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white px-5 py-2.5 rounded-xl font-medium shadow-lg hover:shadow-indigo-500/20 transition-all text-sm"
+                >
+                  {isLoading ? 'Submitting...' : 'Submit Request'}
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Technician Assignment Dialog Modal */}
+      {assigningRequestId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="w-full max-w-md overflow-hidden glass-panel rounded-2xl shadow-2xl border border-slate-800/80 bg-[#0c101d]">
+            
+            <div className="flex items-center justify-between p-6 border-b border-slate-900">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <User className="w-5 h-5 text-indigo-400" />
+                Assign Service Technician
+              </h3>
+              <button
+                onClick={() => setAssigningRequestId(null)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-900 transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAssignTechnician} className="p-6 space-y-4">
+              
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Technician Full Name</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Ramesh Kumar"
+                  value={techName}
+                  onChange={(e) => setTechName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-900 rounded-xl px-4 py-3 text-slate-200 text-sm focus:border-indigo-500 focus:outline-none transition-all placeholder:text-slate-600"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-900">
+                <button
+                  type="button"
+                  onClick={() => setAssigningRequestId(null)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-900 font-medium transition-all text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-2.5 rounded-xl font-medium shadow-lg hover:shadow-indigo-500/20 transition-all text-sm"
+                >
+                  Assign & Save
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
