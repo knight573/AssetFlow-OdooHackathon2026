@@ -151,23 +151,52 @@ export const Login: React.FC = () => {
     }
   };
 
-  // OTP Send Trigger
-  const handleSendOtp = (e: React.FormEvent) => {
+  // OTP Send Trigger (Real email delivery)
+  const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     setSuccessMsg(null);
+    setLoading(true);
 
     const list = getMockData<Profile>('profiles');
     const found = list.find(p => p.email.toLowerCase() === email.trim().toLowerCase());
     if (!found) {
       setErrorMsg('No profile found with this email address.');
+      setLoading(false);
       return;
     }
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setGeneratedOtp(code);
-    setOtpSent(true);
-    setSuccessMsg(`A unique OTP has been generated and sent to: ${email}`);
+
+    try {
+      // Dispatches email securely via keyless FormSubmit relay endpoint
+      const response = await fetch(`https://formsubmit.co/ajax/${email.trim()}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({
+          _subject: "AssetFlow Portal - OTP Reset Request Verification",
+          message: `Hello,\n\nA password reset request was triggered on the AssetFlow ERP system.\n\nYour secure 6-digit OTP code is: ${code}\n\nIf you did not initiate this request, please change your credentials immediately.\n\nRegards,\nAssetFlow Security Team`,
+          _honey: ""
+        })
+      });
+
+      const res = await response.json();
+      if (res.success === "false") {
+        throw new Error(res.message || "Failed to relay reset email.");
+      }
+
+      setOtpSent(true);
+      setSuccessMsg(`Secure OTP email dispatched successfully. Check your inbox: ${email}`);
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg('Email delivery failed. Checking network state. Please verify the email ID or try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // OTP Reset submit
@@ -276,15 +305,6 @@ export const Login: React.FC = () => {
               <div className="mt-2 p-2.5 bg-slate-950/80 rounded-lg border border-emerald-800/20 text-center animate-slide-up">
                 <span className="text-[10px] text-slate-500 block uppercase font-bold">Your Email Address</span>
                 <span className="text-sm font-mono text-emerald-400 font-extrabold">{recoveredEmail}</span>
-              </div>
-            )}
-            {otpSent && generatedOtp && (
-              <div className="mt-2 p-2.5 bg-indigo-950/85 rounded-lg border border-indigo-800/30 text-center animate-slide-up flex flex-col gap-1">
-                <span className="text-[9px] text-indigo-400 uppercase font-bold tracking-wider">Simulated OTP Inbox</span>
-                <div className="flex items-center justify-center gap-2">
-                  <KeyRound className="w-4 h-4 text-indigo-400" />
-                  <span className="text-sm font-mono text-indigo-300 font-extrabold tracking-widest">{generatedOtp}</span>
-                </div>
               </div>
             )}
           </div>
@@ -406,7 +426,7 @@ export const Login: React.FC = () => {
                     return (
                       <tr key={emp.id} className="hover:bg-slate-900/5 transition-colors">
                         <td className="p-3.5 font-bold text-white text-xs">{emp.name}</td>
-                        <td className="p-3.5 text-slate-355">{emp.email}</td>
+                        <td className="p-3.5 text-slate-350">{emp.email}</td>
                         <td className="p-3.5 text-slate-400">{dep ? dep.name : <span className="italic text-slate-650 text-[10px]">Unassigned</span>}</td>
                         <td className="p-3.5">
                           <select
@@ -524,9 +544,10 @@ export const Login: React.FC = () => {
                 </div>
                 <button
                   type="submit"
-                  className="w-full py-3 bg-indigo-650 hover:bg-indigo-600 rounded-xl font-extrabold text-xs text-white shadow-lg transition cursor-pointer"
+                  disabled={loading}
+                  className="w-full py-3 bg-indigo-650 hover:bg-indigo-600 rounded-xl font-extrabold text-xs text-white shadow-lg transition cursor-pointer disabled:opacity-40"
                 >
-                  Send OTP Code
+                  {loading ? 'Relaying OTP Email...' : 'Send OTP Code'}
                 </button>
               </form>
             ) : (
@@ -633,7 +654,7 @@ export const Login: React.FC = () => {
                       >
                         Forgot Email ID?
                       </button>
-                      <span className="text-[10px] text-slate-650">|</span>
+                      <span className="text-[10px] text-slate-655">|</span>
                       <button
                         type="button"
                         onClick={() => {
@@ -736,7 +757,7 @@ export const Login: React.FC = () => {
                   setAdminEmail('');
                   setAdminPassword('');
                 }}
-                className="text-xs text-emerald-450 hover:underline font-bold flex items-center justify-center gap-1 cursor-pointer mt-1"
+                className="text-xs text-emerald-455 hover:underline font-bold flex items-center justify-center gap-1 cursor-pointer mt-1"
               >
                 <Settings className="w-3.5 h-3.5" />
                 Admin Directory Console
@@ -747,12 +768,12 @@ export const Login: React.FC = () => {
 
         {/* Reference Seed accounts directory helper note */}
         {mode !== 'admin_console' && (
-          <div className="p-3 bg-indigo-950/10 border border-indigo-950/30 rounded-xl space-y-1 animate-fade-in">
+          <div className="p-3 bg-indigo-950/10 border border-indigo-950/30 rounded-xl space-y-1 animate-fade-in font-medium">
             <div className="flex items-center gap-1.5">
               <Info className="w-4 h-4 text-indigo-400 shrink-0" />
               <span className="text-[10px] font-bold text-indigo-350 uppercase">Preseeded Team Accounts</span>
             </div>
-            <div className="text-[9px] text-slate-400 leading-normal space-y-0.5 max-h-40 overflow-y-auto font-medium">
+            <div className="text-[9px] text-slate-400 leading-normal space-y-0.5 max-h-40 overflow-y-auto">
               <p>1. <strong>Aadarsh Nath</strong> (Admin) — <code>aadarsh@company.com</code> | <code>admin123</code></p>
               <p>2. <strong>Yash Raj</strong> (Admin) — <code>yash@company.com</code> | <code>admin123</code></p>
               <p>3. <strong>Fahad Hassan</strong> (Admin) — <code>fahad@company.com</code> | <code>admin123</code></p>
