@@ -339,7 +339,7 @@ export const App: React.FC = () => {
             }`}
           >
             <Wrench className="w-5 h-5" />
-            Repair Kanban Board
+            Maintenance Management
           </button>
 
           {/* Person 4 Features (Insights) */}
