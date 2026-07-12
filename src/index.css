@@ -304,3 +304,114 @@ html:not(.dark) .bg-slate-900\/5 {
 html:not(.dark) .border-slate-900\/40 {
   border-color: rgba(0, 0, 0, 0.05) !important;
 }
+
+/* Operational grid container box overrides */
+html:not(.dark) .bg-slate-950\/30 {
+  background-color: rgba(241, 245, 249, 0.7) !important;
+  border-color: #cbd5e1 !important;
+}
+
+html:not(.dark) .bg-slate-950\/45 {
+  background-color: rgba(241, 245, 249, 0.8) !important;
+  border-color: #cbd5e1 !important;
+}
+
+html:not(.dark) .bg-slate-950\/20 {
+  background-color: rgba(241, 245, 249, 0.4) !important;
+  border-color: #cbd5e1 !important;
+}
+
+html:not(.dark) .bg-slate-950\/50 {
+  background-color: rgba(241, 245, 249, 0.9) !important;
+}
+
+html:not(.dark) .bg-rose-950\/20 {
+  background-color: rgba(244, 63, 94, 0.08) !important;
+  border-color: rgba(244, 63, 94, 0.3) !important;
+  color: #9f1239 !important;
+}
+
+html:not(.dark) .bg-rose-950\/60 {
+  background-color: rgba(244, 63, 94, 0.15) !important;
+  border-color: rgba(244, 63, 94, 0.3) !important;
+}
+
+html:not(.dark) .border-rose-900\/30 {
+  border-color: rgba(244, 63, 94, 0.3) !important;
+}
+
+html:not(.dark) .border-rose-900\/50 {
+  border-color: rgba(244, 63, 94, 0.4) !important;
+}
+
+html:not(.dark) .border-rose-950 {
+  border-color: rgba(244, 63, 94, 0.25) !important;
+}
+
+html:not(.dark) .hover\:bg-rose-950\/30:hover {
+  background-color: rgba(244, 63, 94, 0.12) !important;
+}
+
+html:not(.dark) .hover\:bg-slate-900\/30:hover {
+  background-color: rgba(226, 232, 240, 0.6) !important;
+}
+
+html:not(.dark) .bg-indigo-950 {
+  background-color: rgba(99, 102, 241, 0.08) !important;
+  color: #3730a3 !important;
+  border-color: rgba(99, 102, 241, 0.25) !important;
+}
+
+html:not(.dark) .bg-indigo-950\/50 {
+  background-color: rgba(99, 102, 241, 0.08) !important;
+}
+
+html:not(.dark) .bg-indigo-950\/40 {
+  background-color: rgba(99, 102, 241, 0.08) !important;
+}
+
+html:not(.dark) .border-indigo-900 {
+  border-color: rgba(99, 102, 241, 0.25) !important;
+}
+
+html:not(.dark) .border-indigo-900\/50 {
+  border-color: rgba(99, 102, 241, 0.3) !important;
+}
+
+html:not(.dark) .border-indigo-900\/30 {
+  border-color: rgba(99, 102, 241, 0.2) !important;
+}
+
+html:not(.dark) .bg-emerald-950 {
+  background-color: rgba(16, 185, 129, 0.08) !important;
+  color: #065f46 !important;
+  border-color: rgba(16, 185, 129, 0.25) !important;
+}
+
+html:not(.dark) .bg-emerald-950\/50 {
+  background-color: rgba(16, 185, 129, 0.08) !important;
+}
+
+html:not(.dark) .border-emerald-900 {
+  border-color: rgba(16, 185, 129, 0.25) !important;
+}
+
+html:not(.dark) .border-emerald-900\/30 {
+  border-color: rgba(16, 185, 129, 0.2) !important;
+}
+
+html:not(.dark) .bg-\[\#0c101d\] {
+  background-color: #ffffff !important;
+}
+
+html:not(.dark) .bg-\[\#080c1a\] {
+  background-color: #ffffff !important;
+}
+
+html:not(.dark) .ring-\[\#0b0f19\] {
+  --tw-ring-color: #ffffff !important;
+}
+
+html:not(.dark) .border-slate-800\/80 {
+  border-color: #cbd5e1 !important;
+}
