@@ -8,8 +8,8 @@ interface AuthContextType {
   profile: Profile | null;
   role: UserRole;
   loading: boolean;
-  login: (email: string) => Promise<void>;
-  signup: (email: string, name: string) => Promise<void>;
+  login: (email: string, password?: string) => Promise<void>;
+  signup: (email: string, name: string, password?: string) => Promise<void>;
   logout: () => Promise<void>;
   switchProfile: (profileId: string) => void;
   allProfiles: Profile[];
@@ -119,10 +119,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const login = async (email: string) => {
+  const login = async (email: string, password?: string) => {
     setLoading(true);
     if (isSupabaseConfigured) {
-      const { error } = await supabase.auth.signInWithOtp({ email });
+      const { error } = await supabase.auth.signInWithPassword({ email, password: password || 'password123' });
       if (error) throw error;
     } else {
       const list = getMockData<Profile>('profiles');
@@ -131,6 +131,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
         throw new Error("No profile found with this email. Please sign up first.");
       }
+      
+      const storedPassword = found.password || 'password123';
+      if (password && password !== storedPassword) {
+        setLoading(false);
+        throw new Error("Incorrect password. Please try again.");
+      }
+
       localStorage.setItem('assetflow_current_user_id', found.id);
       setUser({ id: found.id, email: found.email });
       setProfile(found);
@@ -139,7 +146,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signup = async (email: string, name: string) => {
+  const signup = async (email: string, name: string, password?: string) => {
     setLoading(true);
     const newId = crypto.randomUUID();
     const newProfile: Profile = {
@@ -149,13 +156,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       department_id: null,
       role: 'employee',
       status: 'active',
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      password: password || 'password123'
     };
 
     if (isSupabaseConfigured) {
       const { error } = await supabase.auth.signUp({
         email,
-        password: 'password123', // dummy password for quick hackathon flow
+        password: password || 'password123',
         options: { data: { name } }
       });
       if (error) throw error;

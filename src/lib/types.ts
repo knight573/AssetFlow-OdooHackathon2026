@@ -34,6 +34,7 @@ export interface Profile {
   role: UserRole;
   status: 'active' | 'inactive';
   created_at: string;
+  password?: string;
 }
 
 export interface Asset {

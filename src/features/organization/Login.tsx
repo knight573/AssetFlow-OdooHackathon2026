@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../lib/auth';
-import { Boxes, Mail, UserPlus, LogIn, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Boxes, Mail, UserPlus, LogIn, Sparkles, CheckCircle2, Lock } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { login, signup } = useAuth();
@@ -11,6 +11,7 @@ export const Login: React.FC = () => {
   // Form values
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
   
   // Status states
   const [loading, setLoading] = useState(false);
@@ -25,13 +26,16 @@ export const Login: React.FC = () => {
 
     try {
       if (mode === 'signin') {
-        await login(email.trim());
+        await login(email.trim(), password);
         setSuccessMsg('Logged in successfully!');
       } else {
         if (!name.trim()) {
           throw new Error('Please enter your full name.');
         }
-        await signup(email.trim(), name.trim());
+        if (!password) {
+          throw new Error('Please set a password for your account.');
+        }
+        await signup(email.trim(), name.trim(), password);
         setSuccessMsg('Account registered successfully! Welcome to AssetFlow.');
       }
     } catch (err: any) {
@@ -64,12 +68,12 @@ export const Login: React.FC = () => {
 
         {/* Feedback alerts */}
         {errorMsg && (
-          <div className="p-3.5 bg-rose-950/20 border border-rose-900/40 rounded-xl text-xs text-rose-350 font-medium">
+          <div className="p-3.5 bg-rose-950/20 border border-rose-900/40 rounded-xl text-xs text-rose-350 font-medium animate-slide-up">
             {errorMsg}
           </div>
         )}
         {successMsg && (
-          <div className="p-3.5 bg-emerald-950/20 border border-emerald-900/40 rounded-xl text-xs text-emerald-350 font-medium flex items-center gap-2">
+          <div className="p-3.5 bg-emerald-950/20 border border-emerald-900/40 rounded-xl text-xs text-emerald-350 font-medium flex items-center gap-2 animate-slide-up">
             <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
             {successMsg}
           </div>
@@ -107,6 +111,20 @@ export const Login: React.FC = () => {
             </div>
           </div>
 
+          <div className="space-y-1">
+            <label className="text-[10px] font-bold text-slate-500 uppercase">Password</label>
+            <div className="relative">
+              <input
+                type="password"
+                required
+                placeholder="Enter password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full p-3 pl-4 rounded-xl bg-slate-950/60 border border-slate-850 focus:border-indigo-500 text-xs font-semibold text-slate-200 outline-none transition"
+              />
+            </div>
+          </div>
+
           <button
             type="submit"
             disabled={loading}
@@ -136,6 +154,7 @@ export const Login: React.FC = () => {
                   setMode('signup');
                   setErrorMsg(null);
                   setSuccessMsg(null);
+                  setPassword('');
                 }}
                 className="text-indigo-400 font-bold hover:underline cursor-pointer"
               >
@@ -150,6 +169,7 @@ export const Login: React.FC = () => {
                   setMode('signin');
                   setErrorMsg(null);
                   setSuccessMsg(null);
+                  setPassword('');
                 }}
                 className="text-indigo-400 font-bold hover:underline cursor-pointer"
               >
@@ -163,7 +183,7 @@ export const Login: React.FC = () => {
         <div className="p-3 bg-indigo-950/10 border border-indigo-950/30 rounded-xl flex items-center gap-2">
           <Sparkles className="w-4.5 h-4.5 text-indigo-400 shrink-0" />
           <p className="text-[10px] text-slate-400 leading-normal">
-            <strong>Simulation Note:</strong> In sandbox mode, signing in verifies against preseeded local accounts (e.g., <code>sarah@company.com</code>, <code>priya@company.com</code>).
+            <strong>Simulation Note:</strong> Seeded profiles (e.g. <code>sarah@company.com</code>) have a default password of <code>password123</code>.
           </p>
         </div>
 
