@@ -13,7 +13,11 @@ import {
   UserCheck, 
   RotateCcw,
   AlertTriangle,
-  HelpCircle
+  HelpCircle,
+  QrCode,
+  Scan,
+  Camera,
+  X
 } from 'lucide-react';
 import type { Asset, Profile, Department, Category, AssetStatus, AssetCondition, Allocation } from '../../lib/types';
 import { localDb } from '../../lib/supabase';
@@ -57,6 +61,12 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
   // Expand Asset Log History
   const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null);
   const [assetHistory, setAssetHistory] = useState<any[]>([]);
+
+  // QR Code Scanner Simulator states
+  const [showScannerModal, setShowScannerModal] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scannedTag, setScannedTag] = useState<string | null>(null);
+  const [highlightedAssetId, setHighlightedAssetId] = useState<string | null>(null);
 
   // Load Data
   const loadData = () => {
@@ -160,8 +170,33 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
     setNewAssetAcquisitionDate(new Date().toISOString().split('T')[0]);
     setNewAssetPhotoUrl('');
     setNewAssetLocation('');
+    setNewAssetLocation('');
     setShowRegisterPanel(false);
     loadData();
+  };
+
+  const handleSimulateScan = () => {
+    if (assets.length === 0) return;
+    setShowScannerModal(true);
+    setIsScanning(true);
+    setScannedTag(null);
+
+    setTimeout(() => {
+      setIsScanning(false);
+      const randomAsset = assets[Math.floor(Math.random() * assets.length)];
+      setScannedTag(randomAsset.tag);
+      setSearchQuery(randomAsset.tag);
+      setHighlightedAssetId(randomAsset.id);
+      
+      setTimeout(() => {
+        setShowScannerModal(false);
+        setScannedTag(null);
+        setTimeout(() => {
+          setHighlightedAssetId(null);
+        }, 3000);
+      }, 1550);
+
+    }, 2000);
   };
 
   const handleStatusChange = (assetId: string, newStatus: AssetStatus) => {
@@ -313,7 +348,7 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
           { label: 'Available', value: stats.available, color: 'border-emerald-500/20 text-emerald-400 bg-emerald-950/10' },
           { label: 'Allocated', value: stats.allocated, color: 'border-indigo-500/20 text-indigo-400 bg-indigo-950/10' },
           { label: 'Under Repair', value: stats.maintenance, color: 'border-amber-500/20 text-amber-400 bg-amber-950/10' },
-          { label: 'Portfolio Value', value: `$${stats.totalValue.toLocaleString()}`, color: 'border-violet-500/20 text-violet-400 bg-violet-950/10' }
+          { label: 'Portfolio Value', value: `₹${stats.totalValue.toLocaleString()}`, color: 'border-violet-500/20 text-violet-400 bg-violet-950/10' }
         ].map((c, i) => (
           <div key={i} className={`p-5 rounded-2xl border glass-card ${c.color} shadow-sm`}>
             <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{c.label}</p>
@@ -407,7 +442,7 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5">Acquisition Cost ($)</label>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5">Acquisition Cost (₹)</label>
                   <input
                     type="number"
                     step="0.01"
@@ -507,16 +542,25 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
           {/* Action triggers */}
           <div className="flex items-center gap-2.5">
             <button
+              onClick={handleSimulateScan}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900/60 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-white rounded-xl text-xs font-bold transition-all shadow cursor-pointer animate-pulse"
+              title="Scan Tag QR Code"
+            >
+              <QrCode className="h-4 w-4 text-brand-400" />
+              Scan QR
+            </button>
+
+            <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center justify-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-bold transition-all ${
-                showFilters || selectedCategory || selectedDepartment || selectedStatus
+                showFilters || selectedCategory || selectedDepartment || selectedStatus || selectedLocation
                   ? 'bg-brand-500/15 border-brand-500/30 text-brand-300' 
                   : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:text-white'
               }`}
             >
               <SlidersHorizontal className="h-4 w-4" />
               Advanced Filters
-              {(selectedCategory || selectedDepartment || selectedStatus) && (
+              {(selectedCategory || selectedDepartment || selectedStatus || selectedLocation) && (
                 <span className="h-2 w-2 rounded-full bg-brand-400" />
               )}
             </button>
@@ -628,10 +672,15 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
                     categories.find(c => c.id === asset.category_id)?.name || ''
                   );
                   const isExpanded = expandedAssetId === asset.id;
+                  const isHighlighted = highlightedAssetId === asset.id;
 
                   return (
                     <React.Fragment key={asset.id}>
-                      <tr className="hover:bg-slate-900/20 text-slate-200 text-sm transition-colors group">
+                      <tr 
+                        className={`group border-b border-slate-850 hover:bg-slate-900/10 cursor-pointer transition-all duration-500 ${
+                          isHighlighted ? 'bg-emerald-950/20 border-emerald-500/30 shadow-[inset_0_0_15px_rgba(16,185,129,0.15)] ring-2 ring-emerald-500 z-50 relative' : ''
+                        }`}
+                      >
                         {/* Tag */}
                         <td className="px-6 py-4.5 font-mono text-xs font-bold">
                           <span className="px-2.5 py-1 rounded bg-slate-900 border border-slate-850 text-brand-300 group-hover:border-brand-500/20 transition-colors">
@@ -788,7 +837,7 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
                                   </span>
                                   {asset.acquisition_cost !== undefined && asset.acquisition_cost !== null && (
                                     <p className="text-[11px] text-slate-400 font-semibold pt-1">
-                                      Cost: <span className="text-emerald-400">${asset.acquisition_cost.toLocaleString()}</span>
+                                      Cost: <span className="text-emerald-400">₹{asset.acquisition_cost.toLocaleString()}</span>
                                     </p>
                                   )}
                                   {asset.acquisition_date && (
@@ -814,24 +863,64 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
                                 {assetHistory.length === 0 ? (
                                   <p className="text-xs text-slate-500 italic">No logs reported for this device.</p>
                                 ) : (
-                                  <div className="relative pl-4 border-l border-slate-800 space-y-3 max-h-56 overflow-y-auto">
+                                  <div className="relative pl-7 border-l-2 border-slate-800/80 space-y-5 max-h-60 overflow-y-auto py-1">
                                     {assetHistory.map((log) => {
                                       const actorName = profiles.find(p => p.id === log.actor_id)?.name || 'System';
+                                      
+                                      // Get icon and color mapping dynamically
+                                      const getTimelineStyle = (action: string) => {
+                                        switch (action) {
+                                          case 'asset_registered':
+                                            return {
+                                              icon: <Plus className="h-3 w-3" />,
+                                              color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30'
+                                            };
+                                          case 'asset_allocated':
+                                            return {
+                                              icon: <UserCheck className="h-3 w-3" />,
+                                              color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                                            };
+                                          case 'asset_returned':
+                                            return {
+                                              icon: <RotateCcw className="h-3 w-3" />,
+                                              color: 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                                            };
+                                          case 'status_transition':
+                                            return {
+                                              icon: <HelpCircle className="h-3 w-3" />,
+                                              color: 'bg-violet-500/10 text-violet-400 border-violet-500/30'
+                                            };
+                                          default:
+                                            return {
+                                              icon: <ArrowRightLeft className="h-3 w-3" />,
+                                              color: 'bg-slate-800 text-slate-400 border-slate-700/50'
+                                            };
+                                        }
+                                      };
+
+                                      const style = getTimelineStyle(log.action);
+
                                       return (
                                         <div key={log.id} className="text-xs relative">
-                                          <span className="absolute -left-[21px] top-1.5 h-2 w-2 rounded-full bg-slate-800 ring-4 ring-slate-950" />
+                                          {/* Connecting bullet point containing visual state icon */}
+                                          <span className={`absolute -left-[38px] top-0.5 h-6 w-6 rounded-full flex items-center justify-center border ${style.color} ring-4 ring-slate-950 z-10 hover:scale-110 transition-transform`}>
+                                            {style.icon}
+                                          </span>
                                           <div className="flex items-center justify-between text-slate-400 mb-0.5">
-                                            <span className="font-semibold text-slate-200">
-                                              {log.action.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}
+                                            <span className="font-bold text-slate-200 uppercase tracking-wider text-[10px]">
+                                              {log.action.split('_').join(' ')}
                                             </span>
-                                            <span className="text-[10px] text-slate-500 font-mono">
-                                              {new Date(log.created_at).toLocaleString()}
+                                            <span className="text-[10px] text-slate-550 font-mono">
+                                              {new Date(log.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                                             </span>
                                           </div>
-                                          <p className="text-slate-450 leading-normal">
-                                            Triggered by: <span className="text-slate-300 font-medium">{actorName}</span>
+                                          <p className="text-slate-450 leading-relaxed">
+                                            Triggered by <span className="text-slate-350 font-medium">{actorName}</span>
                                             {log.details && log.details.assignee && (
-                                              <> &rarr; Assigned to <span className="text-slate-350 font-medium">{log.details.assignee}</span></>
+                                              <> &rarr; Assigned to <span className="text-brand-300 font-bold">{log.details.assignee}</span></>
+                                            )}
+                                            {log.details && log.details.to_status && (
+                                              <> &rarr; Transitioned to <span className="text-violet-300 font-semibold">{log.details.to_status.toUpperCase()}</span></>
                                             )}
                                           </p>
                                         </div>
@@ -853,6 +942,52 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
           </div>
         )}
       </div>
+      {/* QR Code Scanner Simulation Modal */}
+      {showScannerModal && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden relative">
+            <button 
+              onClick={() => setShowScannerModal(false)}
+              className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="p-6 text-center space-y-6">
+              <div className="flex flex-col items-center">
+                <Camera className="h-8 w-8 text-indigo-400 animate-pulse" />
+                <h4 className="text-md font-bold text-white mt-3">QR Code Tag Reader</h4>
+                <p className="text-xs text-slate-500 mt-1">Simulating hardware laser barcode camera scans...</p>
+              </div>
+
+              {/* Viewfinder window */}
+              <div className="relative w-48 h-48 mx-auto border-2 border-indigo-500 rounded-2xl bg-slate-950 overflow-hidden flex items-center justify-center shadow-inner">
+                {/* Visual Laser bar */}
+                {isScanning && (
+                  <div className="absolute left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent top-0 animate-bounce shadow-[0_0_10px_rgba(34,211,238,0.7)]" style={{ animationDuration: '2s' }} />
+                )}
+
+                {isScanning ? (
+                  <div className="text-center space-y-2">
+                    <Scan className="h-8 w-8 text-cyan-400 animate-pulse mx-auto" />
+                    <span className="text-[10px] text-slate-400 font-mono tracking-wider">SCANNING TAG NODE...</span>
+                  </div>
+                ) : (
+                  <div className="text-center space-y-2 animate-scale-up">
+                    <QrCode className="h-12 w-12 text-emerald-400 mx-auto" />
+                    <span className="text-[11px] text-emerald-400 font-mono font-bold block">{scannedTag}</span>
+                    <span className="text-[9px] text-emerald-500 tracking-wider font-extrabold uppercase">TAG SCANNED SUCCESS</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="text-xs text-slate-400 italic">
+                {isScanning ? "Aiming at tag barcode sequence..." : "Verifying Odoo ERP database matches..."}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
