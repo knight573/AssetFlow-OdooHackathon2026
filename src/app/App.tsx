@@ -210,7 +210,7 @@ export const App: React.FC = () => {
     return <Login />;
   }
 
-  const unreadNotificationsCount = notifications.filter(n => !n.is_read).length;
+  const unreadNotificationsCount = notifications.filter(n => n.user_id === profile.id && !n.is_read).length;
 
   const overdueCount = allocations.filter(a => {
     if (a.returned_at) return false;
@@ -229,6 +229,26 @@ export const App: React.FC = () => {
     returnDate.setHours(0,0,0,0);
     return returnDate >= today;
   }).length;
+
+  const toggleNotifications = () => {
+    const nextShow = !showNotifications;
+    setShowNotifications(nextShow);
+    if (nextShow && profile) {
+      const allNotif = getMockData<Notification>('notifications');
+      let updated = false;
+      const updatedList = allNotif.map(n => {
+        if (n.user_id === profile.id && !n.is_read) {
+          updated = true;
+          return { ...n, is_read: true };
+        }
+        return n;
+      });
+      if (updated) {
+        setMockData('notifications', updatedList);
+        setNotifications(updatedList);
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen flex text-slate-100 bg-[#050811]">
@@ -463,7 +483,7 @@ export const App: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setShowNotifications(!showNotifications)}
+              onClick={toggleNotifications}
               className="relative p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-900 transition-all cursor-pointer"
             >
               <Bell className="w-5 h-5" />
@@ -476,23 +496,25 @@ export const App: React.FC = () => {
             {showNotifications && (
               <div className="absolute right-0 top-12 w-80 glass-panel rounded-2xl border border-slate-800 shadow-2xl p-4 z-50 max-h-96 overflow-y-auto">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-900 mb-3">
-                  <h4 className="font-bold text-xs text-white">Notifications Log ({notifications.length})</h4>
+                  <h4 className="font-bold text-xs text-white">Notifications Log ({notifications.filter(n => n.user_id === profile.id && n.type !== 'booking_reminder_1h').length})</h4>
                   <button 
                     onClick={() => {
-                      localStorage.setItem('assetflow_notifications', JSON.stringify([]));
-                      setNotifications([]);
+                      const allNotif = getMockData<Notification>('notifications');
+                      const filtered = allNotif.filter(n => n.user_id !== profile.id);
+                      setMockData('notifications', filtered);
+                      setNotifications(filtered);
                     }}
-                    className="text-[10px] text-slate-500 hover:text-white"
+                    className="text-[10px] text-slate-500 hover:text-white cursor-pointer"
                   >
                     Clear All
                   </button>
                 </div>
                 
                 <div className="space-y-2">
-                  {notifications.length === 0 ? (
+                  {notifications.filter(n => n.user_id === profile.id && n.type !== 'booking_reminder_1h').length === 0 ? (
                     <p className="text-[11px] text-slate-600 text-center py-4">No recent notification alerts</p>
                   ) : (
-                    notifications.filter(n => n.type !== 'booking_reminder_1h').map(n => {
+                    notifications.filter(n => n.user_id === profile.id && n.type !== 'booking_reminder_1h').map(n => {
                       const isUpcoming = n.type === 'booking_upcoming' || n.type === 'booking_confirmed';
                       const isEmail = n.type === 'mock_email';
                       
