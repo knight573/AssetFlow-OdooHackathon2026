@@ -281,14 +281,18 @@ export const Login: React.FC = () => {
         <div className="p-3 bg-indigo-950/10 border border-indigo-950/30 rounded-xl space-y-1">
           <div className="flex items-center gap-1.5">
             <Info className="w-4 h-4 text-indigo-400 shrink-0" />
-            <span className="text-[10px] font-bold text-indigo-350 uppercase">Preseeded Team Accounts (Forgot recovery directory)</span>
+            <span className="text-[10px] font-bold text-indigo-350 uppercase">Preseeded Team Accounts</span>
           </div>
-          <div className="text-[9px] text-slate-400 leading-normal space-y-0.5">
-            <p>1. <strong>Aadarsh Nath</strong> (Admin) — Default password: <code>password123</code></p>
-            <p>2. <strong>Yash Raj</strong> (Asset Manager) — Default password: <code>password123</code></p>
-            <p>3. <strong>Priya Shah</strong> (Employee) — Default password: <code>password123</code></p>
-            <p>4. <strong>Arjun Nair</strong> (Department Head) — Default password: <code>password123</code></p>
-            <p>5. <strong>Sarah Jenkins</strong> (Employee) — Default password: <code>password123</code></p>
+          <div className="text-[9px] text-slate-400 leading-normal space-y-0.5 max-h-40 overflow-y-auto">
+            <p>1. <strong>Aadarsh Nath</strong> (Admin) — <code>aadarsh@company.com</code></p>
+            <p>2. <strong>Yash Raj</strong> (Asset Manager) — <code>yash@company.com</code></p>
+            <p>3. <strong>Fahad Hassan</strong> (Employee) — <code>fahad@company.com</code></p>
+            <p>4. <strong>Mrinal Kishor</strong> (Dept Head) — <code>mrinal@company.com</code></p>
+            <p>5. <strong>Sarah Jenkins</strong> (Employee) — <code>sarah@company.com</code></p>
+            <p>6. <strong>Amit Kumar</strong> (Employee) — <code>amit@company.com</code></p>
+            <p>7. <strong>Neha Sharma</strong> (Employee) — <code>neha@company.com</code></p>
+            <p>8. <strong>Rahul Verma</strong> (Employee) — <code>rahul@company.com</code></p>
+            <p>9. <strong>Deepa Patel</strong> (Employee) — <code>deepa@company.com</code></p>
           </div>
         </div>
 

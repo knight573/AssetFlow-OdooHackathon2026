@@ -15,15 +15,20 @@ export const SEED_ASSET_CHAIR = 'a3333333-3333-3333-3333-333333333333';
 export const SEED_ASSET_ROOM = 'a4444444-4444-4444-4444-444444444444';
 export const SEED_ASSET_VAN = 'a5555555-5555-5555-5555-555555555555';
 
-// 5 Core Persons
+// Core Persons & Additional Employees
 export const SEED_USER_AADARSH = 'u0000000-0000-0000-0000-000000000000';
 export const SEED_USER_YASH = 'u1111111-1111-1111-1111-111111111111';
-export const SEED_USER_PRIYA = 'u2222222-2222-2222-2222-222222222222';
-export const SEED_USER_ARJUN = 'u3333333-3333-3333-3333-333333333333';
+export const SEED_USER_FAHAD = 'u2222222-2222-2222-2222-222222222222';
+export const SEED_USER_MRINAL = 'u3333333-3333-3333-3333-333333333333';
 export const SEED_USER_SARAH = 'u4444444-4444-4444-4444-444444444444';
 
+export const SEED_USER_AMIT = 'u5555555-5555-5555-5555-555555555555';
+export const SEED_USER_NEHA = 'u6666666-6666-6666-6666-666666666666';
+export const SEED_USER_RAHUL = 'u7777777-7777-7777-7777-777777777777';
+export const SEED_USER_DEEPA = 'u8888888-8888-8888-8888-888888888888';
+
 const INITIAL_DEPARTMENTS: Department[] = [
-  { id: SEED_DEP_ENG, name: 'Engineering', head_id: SEED_USER_ARJUN, parent_department_id: null, status: 'active', created_at: new Date().toISOString() },
+  { id: SEED_DEP_ENG, name: 'Engineering', head_id: SEED_USER_MRINAL, parent_department_id: null, status: 'active', created_at: new Date().toISOString() },
   { id: SEED_DEP_FAC, name: 'Facilities', head_id: SEED_USER_YASH, parent_department_id: null, status: 'active', created_at: new Date().toISOString() },
   { id: SEED_DEP_OPS, name: 'Field Ops (east)', head_id: null, parent_department_id: SEED_DEP_FAC, status: 'inactive', created_at: new Date().toISOString() },
 ];
@@ -37,9 +42,14 @@ const INITIAL_CATEGORIES: Category[] = [
 const INITIAL_PROFILES: Profile[] = [
   { id: SEED_USER_AADARSH, name: 'Aadarsh Nath', email: 'aadarsh@company.com', department_id: SEED_DEP_ENG, role: 'admin', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
   { id: SEED_USER_YASH, name: 'Yash Raj', email: 'yash@company.com', department_id: SEED_DEP_FAC, role: 'asset_manager', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
-  { id: SEED_USER_PRIYA, name: 'Priya Shah', email: 'priya@company.com', department_id: SEED_DEP_ENG, role: 'employee', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
-  { id: SEED_USER_ARJUN, name: 'Arjun Nair', email: 'arjun@company.com', department_id: SEED_DEP_ENG, role: 'department_head', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
+  { id: SEED_USER_FAHAD, name: 'Fahad Hassan', email: 'fahad@company.com', department_id: SEED_DEP_ENG, role: 'employee', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
+  { id: SEED_USER_MRINAL, name: 'Mrinal Kishor', email: 'mrinal@company.com', department_id: SEED_DEP_ENG, role: 'department_head', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
   { id: SEED_USER_SARAH, name: 'Sarah Jenkins', email: 'sarah@company.com', department_id: SEED_DEP_FAC, role: 'employee', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
+  // 4 Additional Employees
+  { id: SEED_USER_AMIT, name: 'Amit Kumar', email: 'amit@company.com', department_id: SEED_DEP_ENG, role: 'employee', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
+  { id: SEED_USER_NEHA, name: 'Neha Sharma', email: 'neha@company.com', department_id: SEED_DEP_ENG, role: 'employee', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
+  { id: SEED_USER_RAHUL, name: 'Rahul Verma', email: 'rahul@company.com', department_id: SEED_DEP_FAC, role: 'employee', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
+  { id: SEED_USER_DEEPA, name: 'Deepa Patel', email: 'deepa@company.com', department_id: SEED_DEP_FAC, role: 'employee', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
 ];
 
 const INITIAL_ASSETS: Asset[] = [
@@ -54,7 +64,7 @@ const INITIAL_BOOKINGS: Booking[] = [
   {
     id: 'b1111111-1111-1111-1111-111111111111',
     resource_asset_id: SEED_ASSET_ROOM,
-    booked_by: SEED_USER_PRIYA,
+    booked_by: SEED_USER_FAHAD,
     purpose: 'Weekly Team Sync',
     start_time: (() => {
       const d = new Date();
@@ -75,7 +85,7 @@ const INITIAL_MAINTENANCE: MaintenanceRequest[] = [
   {
     id: 'm1111111-1111-1111-1111-111111111111',
     asset_id: SEED_ASSET_PROJ,
-    raised_by: SEED_USER_PRIYA,
+    raised_by: SEED_USER_FAHAD,
     issue_description: 'Lamp flickering and colors distorted.',
     priority: 'medium',
     photo_url: null,
@@ -91,7 +101,7 @@ const INITIAL_ALLOCATIONS = [
   {
     id: 'al111111-1111-1111-1111-111111111111',
     asset_id: SEED_ASSET_LAPTOP,
-    employee_id: SEED_USER_PRIYA,
+    employee_id: SEED_USER_FAHAD,
     department_id: SEED_DEP_ENG,
     allocated_by: SEED_USER_YASH,
     allocated_at: new Date(Date.now() - 30 * 86400000).toISOString(),
@@ -108,7 +118,7 @@ const INITIAL_AUDIT_CYCLES: AuditCycle[] = [
 ];
 
 const INITIAL_AUDIT_AUDITORS: AuditAuditor[] = [
-  { audit_cycle_id: 'ac1', auditor_id: SEED_USER_PRIYA }
+  { audit_cycle_id: 'ac1', auditor_id: SEED_USER_FAHAD }
 ];
 
 const INITIAL_AUDIT_ITEMS: AuditItem[] = [
