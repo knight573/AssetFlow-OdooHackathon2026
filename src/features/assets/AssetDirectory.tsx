@@ -623,6 +623,7 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
                 <option value="">All Statuses</option>
                 <option value="available">Available</option>
                 <option value="allocated">Allocated</option>
+                <option value="reserved">Reserved</option>
                 <option value="under_maintenance">Under Maintenance</option>
                 <option value="lost">Lost</option>
                 <option value="retired">Retired</option>
