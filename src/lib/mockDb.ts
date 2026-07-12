@@ -1,4 +1,4 @@
-import { Asset, Profile, Department, Category, Booking, MaintenanceRequest, Notification, ActivityLog } from './types';
+import { Asset, Profile, Department, Category, Booking, MaintenanceRequest, Notification, ActivityLog, AuditCycle, AuditAuditor, AuditItem } from './types';
 
 // Seed data IDs
 export const SEED_DEP_ENG = 'd1111111-1111-1111-1111-111111111111';
@@ -84,7 +84,6 @@ const INITIAL_MAINTENANCE: MaintenanceRequest[] = [
   }
 ];
 
-// Allocations to match the Dell Laptop being allocated:
 const INITIAL_ALLOCATIONS = [
   {
     id: 'al111111-1111-1111-1111-111111111111',
@@ -99,6 +98,19 @@ const INITIAL_ALLOCATIONS = [
     status: 'active',
     created_at: new Date(Date.now() - 30 * 86400000).toISOString()
   }
+];
+
+const INITIAL_AUDIT_CYCLES: AuditCycle[] = [
+  { id: 'ac1', name: 'Q3 Engineering Audit', department_id: SEED_DEP_ENG, location: 'Bengaluru', date_range_start: '2026-07-01', date_range_end: '2026-07-31', status: 'open', created_by: SEED_USER_ADMIN, created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() }
+];
+
+const INITIAL_AUDIT_AUDITORS: AuditAuditor[] = [
+  { audit_cycle_id: 'ac1', auditor_id: SEED_USER_PRIYA }
+];
+
+const INITIAL_AUDIT_ITEMS: AuditItem[] = [
+  { id: 'ai1', audit_cycle_id: 'ac1', asset_id: SEED_ASSET_CHAIR, expected_location: 'Warehouse', verification_status: 'pending', notes: null, created_at: new Date().toISOString() },
+  { id: 'ai2', audit_cycle_id: 'ac1', asset_id: SEED_ASSET_LAPTOP, expected_location: 'Bengaluru Office', verification_status: 'pending', notes: null, created_at: new Date().toISOString() }
 ];
 
 export function initMockDb(force = false) {
@@ -116,6 +128,9 @@ export function initMockDb(force = false) {
   localStorage.setItem('assetflow_transfer_requests', JSON.stringify([]));
   localStorage.setItem('assetflow_notifications', JSON.stringify([]));
   localStorage.setItem('assetflow_activity_logs', JSON.stringify([]));
+  localStorage.setItem('assetflow_audit_cycles', JSON.stringify(INITIAL_AUDIT_CYCLES));
+  localStorage.setItem('assetflow_audit_auditors', JSON.stringify(INITIAL_AUDIT_AUDITORS));
+  localStorage.setItem('assetflow_audit_items', JSON.stringify(INITIAL_AUDIT_ITEMS));
 
   localStorage.setItem('assetflow_init', 'true');
 }

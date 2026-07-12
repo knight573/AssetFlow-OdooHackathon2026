@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { supabase, isSupabaseConfigured } from './supabase';
 import { insertMockRow } from './mockDb';
 import { ActivityLog, Notification } from './types';
@@ -70,3 +71,8 @@ export async function logActivity(params: {
 }
 
 export default logActivity;
+=======
+import { db } from './supabase';
+
+export const logActivity = db.logActivity;
+>>>>>>> origin/feature/insights

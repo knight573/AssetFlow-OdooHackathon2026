@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+=======
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
+>>>>>>> origin/feature/insights
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,12 +12,18 @@
     --background: 224 71% 4%;
     --foreground: 213 31% 91%;
 
+<<<<<<< HEAD
     --muted: 223 47% 11%;
     --muted-foreground: 215.4 16.3% 56.9%;
+=======
+    --card: 224 71% 4%;
+    --card-foreground: 213 31% 91%;
+>>>>>>> origin/feature/insights
 
     --popover: 224 71% 4%;
     --popover-foreground: 213 31% 91%;
 
+<<<<<<< HEAD
     --card: 224 71% 4%;
     --card-foreground: 213 31% 91%;
 
@@ -31,12 +42,32 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
+=======
+    --primary: 263.4 70% 50.4%;
+    --primary-foreground: 210 20% 98%;
+
+    --secondary: 215 27.9% 16.9%;
+    --secondary-foreground: 210 20% 98%;
+
+    --muted: 215 27.9% 16.9%;
+    --muted-foreground: 215.4 16.3% 56.9%;
+
+    --accent: 215 27.9% 16.9%;
+    --accent-foreground: 210 20% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 20% 98%;
+
+    --border: 215 27.9% 16.9%;
+    --input: 215 27.9% 16.9%;
+>>>>>>> origin/feature/insights
     --ring: 263.4 70% 50.4%;
 
     --radius: 0.75rem;
   }
 }
 
+<<<<<<< HEAD
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: #050811;
@@ -67,10 +98,47 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Custom Scrollbar */
+=======
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+    font-family: 'Outfit', sans-serif;
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+}
+
+/* Glassmorphism custom classes */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Animations custom classes */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Scrollbar Customization */
+>>>>>>> origin/feature/insights
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
+<<<<<<< HEAD
 ::-webkit-scrollbar-track {
   background: rgba(5, 8, 17, 0.5);
 }
@@ -95,4 +163,46 @@ h1, h2, h3, h4, h5, h6 {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.05);
+=======
+
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.3);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.5);
+}
+
+/* Print Styles adjustment */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .print\:p-8 {
+    padding: 2rem !important;
+  }
+  
+  .print\:bg-white {
+    background-color: white !important;
+  }
+  
+  .print\:text-black {
+    color: black !important;
+  }
+  
+  .print\:border-slate-300 {
+    border-color: #cbd5e1 !important;
+  }
+
+  .print\:bg-slate-50 {
+    background-color: #f8fafc !important;
+  }
+>>>>>>> origin/feature/insights
 }
