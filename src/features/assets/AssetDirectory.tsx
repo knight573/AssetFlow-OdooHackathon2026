@@ -159,6 +159,37 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
     loadData();
   };
 
+  const handleStatusChange = (assetId: string, newStatus: AssetStatus) => {
+    const allAssets = localDb.getAssets();
+    const asset = allAssets.find(a => a.id === assetId);
+    if (!asset) return;
+
+    const oldStatus = asset.status;
+    const updatedAssets = allAssets.map(a => 
+      a.id === assetId ? { ...a, status: newStatus } : a
+    );
+    localDb.saveAssets(updatedAssets);
+
+    // Log Activity
+    logActivity({
+      actorId: currentUser.id,
+      action: 'status_transition',
+      entityType: 'asset',
+      entityId: assetId,
+      details: {
+        asset_tag: asset.tag,
+        asset_name: asset.name,
+        from_status: oldStatus,
+        to_status: newStatus
+      },
+      notifyUserId: currentUser.id,
+      notifyMessage: `Asset status manually changed from '${oldStatus}' to '${newStatus}' for ${asset.tag}.`,
+      notifyType: 'audit'
+    });
+
+    loadData();
+  };
+
   // Expand Asset History
   const toggleHistory = (asset: Asset) => {
     if (expandedAssetId === asset.id) {
@@ -675,6 +706,21 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
                                   </button>
                                 )}
                               </>
+                            )}
+
+                            {/* Manual lifecycle status transition dropdown for admins/managers */}
+                            {isAssetManagerOrAdmin && asset.status !== 'allocated' && asset.status !== 'under_maintenance' && (
+                              <select
+                                value={asset.status}
+                                onChange={(e) => handleStatusChange(asset.id, e.target.value as any)}
+                                className="px-2 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg text-[11px] text-slate-300 font-bold focus:outline-none focus:border-brand-500 transition-all cursor-pointer"
+                              >
+                                <option value="available">Available</option>
+                                <option value="reserved">Reserved</option>
+                                <option value="lost">Lost</option>
+                                <option value="retired">Retired</option>
+                                <option value="disposed">Disposed</option>
+                              </select>
                             )}
                           </div>
                         </td>
