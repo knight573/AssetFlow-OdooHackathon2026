@@ -31,9 +31,11 @@ export const OrgSetup: React.FC = () => {
   const [newDepName, setNewDepName] = useState('');
   const [newDepParentId, setNewDepParentId] = useState('');
   const [newDepHeadId, setNewDepHeadId] = useState('');
+  const [editingDepId, setEditingDepId] = useState<string | null>(null);
 
   // Form States - Categories
   const [newCatName, setNewCatName] = useState('');
+  const [editingCatId, setEditingCatId] = useState<string | null>(null);
   const [customFieldKey, setCustomFieldKey] = useState('');
   const [customFieldValue, setCustomFieldValue] = useState('');
   const [customFieldsList, setCustomFieldsList] = useState<Record<string, any>>({});
@@ -76,22 +78,52 @@ export const OrgSetup: React.FC = () => {
 
     try {
       setLoading(true);
-      await db.createDepartment(
-        newDepName.trim(),
-        newDepParentId || null,
-        newDepHeadId || null
-      );
+      if (editingDepId) {
+        // Edit Mode
+        const rawList = JSON.parse(localStorage.getItem('assetflow_departments') || '[]') as Department[];
+        const updated = rawList.map(d => d.id === editingDepId ? {
+          ...d,
+          name: newDepName.trim(),
+          parent_department_id: newDepParentId || null,
+          head_id: newDepHeadId || null
+        } : d);
+        localStorage.setItem('assetflow_departments', JSON.stringify(updated));
+        window.dispatchEvent(new CustomEvent('mock-db-change', { detail: { table: 'departments' } }));
+        triggerFeedback('Department updated successfully!', 'success');
+        setEditingDepId(null);
+      } else {
+        // Create Mode
+        await db.createDepartment(
+          newDepName.trim(),
+          newDepParentId || null,
+          newDepHeadId || null
+        );
+        triggerFeedback('Department created successfully!', 'success');
+      }
       
       setNewDepName('');
       setNewDepParentId('');
       setNewDepHeadId('');
-      triggerFeedback('Department created successfully!', 'success');
       loadData();
     } catch (err) {
-      triggerFeedback('Failed to create department', 'error');
+      triggerFeedback('Failed to save department', 'error');
     } finally {
       setLoading(false);
     }
+  };
+
+  const startEditDepartment = (dep: Department) => {
+    setEditingDepId(dep.id);
+    setNewDepName(dep.name);
+    setNewDepParentId(dep.parent_department_id || '');
+    setNewDepHeadId(dep.head_id || '');
+  };
+
+  const cancelEditDepartment = () => {
+    setEditingDepId(null);
+    setNewDepName('');
+    setNewDepParentId('');
+    setNewDepHeadId('');
   };
 
   const handleToggleDepartmentStatus = async (depId: string, currentStatus: 'active' | 'inactive') => {
@@ -130,17 +162,44 @@ export const OrgSetup: React.FC = () => {
 
     try {
       setLoading(true);
-      await db.createCategory(newCatName.trim(), customFieldsList);
+      if (editingCatId) {
+        // Edit Mode
+        const rawList = JSON.parse(localStorage.getItem('assetflow_categories') || '[]') as Category[];
+        const updated = rawList.map(c => c.id === editingCatId ? {
+          ...c,
+          name: newCatName.trim(),
+          custom_fields: customFieldsList
+        } : c);
+        localStorage.setItem('assetflow_categories', JSON.stringify(updated));
+        window.dispatchEvent(new CustomEvent('mock-db-change', { detail: { table: 'categories' } }));
+        triggerFeedback('Asset Category updated!', 'success');
+        setEditingCatId(null);
+      } else {
+        // Create Mode
+        await db.createCategory(newCatName.trim(), customFieldsList);
+        triggerFeedback('Asset Category registered!', 'success');
+      }
       
       setNewCatName('');
       setCustomFieldsList({});
-      triggerFeedback('Asset Category registered!', 'success');
       loadData();
     } catch (err) {
-      triggerFeedback('Failed to create category', 'error');
+      triggerFeedback('Failed to save category', 'error');
     } finally {
       setLoading(false);
     }
+  };
+
+  const startEditCategory = (cat: Category) => {
+    setEditingCatId(cat.id);
+    setNewCatName(cat.name);
+    setCustomFieldsList(cat.custom_fields || {});
+  };
+
+  const cancelEditCategory = () => {
+    setEditingCatId(null);
+    setNewCatName('');
+    setCustomFieldsList({});
   };
 
   // --- Employee Handlers ---
@@ -153,6 +212,22 @@ export const OrgSetup: React.FC = () => {
       loadData();
     } catch (err) {
       triggerFeedback('Failed to promote user role', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeptChange = async (profileId: string, deptId: string) => {
+    try {
+      setLoading(true);
+      const rawList = JSON.parse(localStorage.getItem('assetflow_profiles') || '[]') as Profile[];
+      const updated = rawList.map(p => p.id === profileId ? { ...p, department_id: deptId || null } : p);
+      localStorage.setItem('assetflow_profiles', JSON.stringify(updated));
+      window.dispatchEvent(new CustomEvent('mock-db-change', { detail: { table: 'profiles' } }));
+      triggerFeedback('Employee department assigned successfully!', 'success');
+      loadData();
+    } catch (err) {
+      triggerFeedback('Failed to assign department', 'error');
     } finally {
       setLoading(false);
     }
@@ -250,8 +325,8 @@ export const OrgSetup: React.FC = () => {
           {/* Create Form */}
           <div className="lg:col-span-1 glass-panel border border-slate-900 rounded-2xl p-6 h-fit space-y-4">
             <h3 className="font-bold text-sm text-white flex items-center gap-2">
-              <Plus className="w-4 h-4 text-indigo-400" />
-              Add Department
+              {editingDepId ? <Settings2 className="w-4 h-4 text-indigo-400" /> : <Plus className="w-4 h-4 text-indigo-400" />}
+              {editingDepId ? 'Edit Department' : 'Add Department'}
             </h3>
             <form onSubmit={handleCreateDepartment} className="space-y-4">
               <div>
@@ -294,13 +369,24 @@ export const OrgSetup: React.FC = () => {
                 </select>
               </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold text-xs text-white shadow-md transition disabled:opacity-40"
-              >
-                Create Node
-              </button>
+              <div className="flex gap-2">
+                {editingDepId && (
+                  <button
+                    type="button"
+                    onClick={cancelEditDepartment}
+                    className="flex-1 py-3 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-xl font-bold text-xs text-slate-400 transition"
+                  >
+                    Cancel
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold text-xs text-white shadow-md transition disabled:opacity-40"
+                >
+                  {editingDepId ? 'Save Changes' : 'Create Node'}
+                </button>
+              </div>
             </form>
           </div>
 
@@ -359,17 +445,26 @@ export const OrgSetup: React.FC = () => {
                             </span>
                           </td>
                           <td className="p-4 text-right">
-                            <button
-                              onClick={() => handleToggleDepartmentStatus(dep.id, dep.status)}
-                              className="p-1.5 hover:bg-slate-850 border border-slate-900 rounded-lg text-slate-400 hover:text-white transition"
-                              title="Toggle Status"
-                            >
-                              {dep.status === 'active' ? (
-                                <ToggleRight className="w-5 h-5 text-indigo-400" />
-                              ) : (
-                                <ToggleLeft className="w-5 h-5 text-slate-500" />
-                              )}
-                            </button>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                onClick={() => startEditDepartment(dep)}
+                                className="p-1.5 hover:bg-slate-850 border border-slate-900 rounded-lg text-slate-400 hover:text-white transition"
+                                title="Edit Department"
+                              >
+                                <Settings2 className="w-4 h-4 text-indigo-400" />
+                              </button>
+                              <button
+                                onClick={() => handleToggleDepartmentStatus(dep.id, dep.status)}
+                                className="p-1.5 hover:bg-slate-850 border border-slate-900 rounded-lg text-slate-400 hover:text-white transition"
+                                title="Toggle Status"
+                              >
+                                {dep.status === 'active' ? (
+                                  <ToggleRight className="w-5 h-5 text-indigo-400" />
+                                ) : (
+                                  <ToggleLeft className="w-5 h-5 text-slate-500" />
+                                )}
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -389,8 +484,8 @@ export const OrgSetup: React.FC = () => {
           {/* Create Form */}
           <div className="lg:col-span-1 glass-panel border border-slate-900 rounded-2xl p-6 h-fit space-y-4">
             <h3 className="font-bold text-sm text-white flex items-center gap-2">
-              <Plus className="w-4 h-4 text-indigo-400" />
-              Add Category
+              {editingCatId ? <Settings2 className="w-4 h-4 text-indigo-400" /> : <Plus className="w-4 h-4 text-indigo-400" />}
+              {editingCatId ? 'Edit Category' : 'Add Category'}
             </h3>
             
             <form onSubmit={handleCreateCategory} className="space-y-4">
@@ -453,13 +548,24 @@ export const OrgSetup: React.FC = () => {
                 )}
               </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold text-xs text-white shadow-md transition disabled:opacity-40"
-              >
-                Register Category
-              </button>
+              <div className="flex gap-2">
+                {editingCatId && (
+                  <button
+                    type="button"
+                    onClick={cancelEditCategory}
+                    className="flex-1 py-3 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-xl font-bold text-xs text-slate-400 transition"
+                  >
+                    Cancel
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-bold text-xs text-white shadow-md transition disabled:opacity-40"
+                >
+                  {editingCatId ? 'Save Changes' : 'Register Category'}
+                </button>
+              </div>
             </form>
           </div>
 
@@ -468,10 +574,16 @@ export const OrgSetup: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {categories.map(cat => (
                 <div key={cat.id} className="glass-panel border border-slate-900 rounded-2xl p-5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-white text-base">{cat.name}</h4>
-                    <span className="text-[10px] text-slate-500">Registered</span>
-                  </div>
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-white text-base">{cat.name}</h4>
+                      <button
+                        onClick={() => startEditCategory(cat)}
+                        className="p-1 hover:bg-slate-850 border border-slate-900 rounded-lg text-slate-400 hover:text-white transition"
+                        title="Edit Category"
+                      >
+                        <Settings2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   
                   {/* Category Custom Fields Metadata Box */}
                   <div className="space-y-1 bg-slate-950/40 p-3 rounded-xl border border-slate-900/60">
@@ -544,11 +656,16 @@ export const OrgSetup: React.FC = () => {
                     </td>
 
                     <td className="p-4">
-                      {dep ? (
-                        <span className="text-slate-200 font-semibold">{dep.name}</span>
-                      ) : (
-                        <span className="text-slate-500 italic">No assigned department</span>
-                      )}
+                      <select
+                        value={emp.department_id || ''}
+                        onChange={(e) => handleDeptChange(emp.id, e.target.value)}
+                        className="bg-slate-900 border border-slate-800 rounded-lg p-1.5 text-xs text-slate-200 font-semibold focus:outline-none"
+                      >
+                        <option value="" className="bg-slate-950">Unassigned</option>
+                        {departments.filter(d => d.status === 'active').map(d => (
+                          <option key={d.id} value={d.id} className="bg-slate-950">{d.name}</option>
+                        ))}
+                      </select>
                     </td>
 
                     <td className="p-4">
