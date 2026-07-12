@@ -185,14 +185,14 @@ export const MaintenanceManagement: React.FC = () => {
       )}
 
       {/* Kanban Board */}
-      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4 overflow-x-auto pb-4">
+      <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin">
         {STATUS_COLUMNS.map((column) => {
           const columnRequests = requests.filter((r) => r.status === column.id);
 
           return (
             <div
               key={column.id}
-              className={`flex flex-col min-w-[240px] h-[650px] rounded-2xl border p-4 bg-slate-950/20 ${column.color}`}
+              className={`flex flex-col shrink-0 w-[270px] h-[650px] rounded-2xl border p-4 bg-slate-950/20 ${column.color}`}
             >
               {/* Header */}
               <div className="flex items-center justify-between pb-3 border-b border-slate-900 mb-4">
