@@ -543,8 +543,8 @@ export const App: React.FC = () => {
 
             {/* Notifications overlay popover panel */}
             {showNotifications && (
-              <div className="absolute right-0 top-12 w-80 glass-panel rounded-2xl border border-slate-800 shadow-2xl p-4 z-50 max-h-96 overflow-y-auto">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-900 mb-3">
+              <div className="absolute right-0 top-12 w-80 bg-slate-900 border border-slate-800 shadow-2xl rounded-xl p-4 z-[999] max-h-96 overflow-y-auto">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-800 mb-3">
                   <h4 className="font-bold text-xs text-white">Notifications Log ({notifications.filter(n => n.user_id === profile.id && n.type !== 'booking_reminder_1h').length})</h4>
                   <button 
                     onClick={() => {
@@ -553,7 +553,7 @@ export const App: React.FC = () => {
                       setMockData('notifications', filtered);
                       setNotifications(filtered);
                     }}
-                    className="text-[10px] text-slate-500 hover:text-white cursor-pointer"
+                    className="text-[10px] text-slate-450 hover:text-white cursor-pointer"
                   >
                     Clear All
                   </button>
@@ -561,32 +561,32 @@ export const App: React.FC = () => {
                 
                 <div className="space-y-2">
                   {notifications.filter(n => n.user_id === profile.id && n.type !== 'booking_reminder_1h').length === 0 ? (
-                    <p className="text-[11px] text-slate-600 text-center py-4">No recent notification alerts</p>
+                    <p className="text-[11px] text-slate-650 text-center py-4">No recent notification alerts</p>
                   ) : (
                     notifications.filter(n => n.user_id === profile.id && n.type !== 'booking_reminder_1h').map(n => {
                       const isUpcoming = n.type === 'booking_upcoming' || n.type === 'booking_confirmed';
                       const isEmail = n.type === 'mock_email';
                       
                       return (
-                        <div key={n.id} className="p-2.5 bg-slate-950/40 border border-slate-900 rounded-xl text-xs space-y-1">
+                        <div key={n.id} className="p-2.5 bg-slate-950 border border-slate-850 rounded-lg text-xs space-y-1">
                           <div className="flex items-center gap-1.5 mb-1">
                             {isUpcoming && (
-                              <span className="text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                              <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
                                 Upcoming
                               </span>
                             )}
                             {isEmail && (
-                              <span className="text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-teal-500/10 text-teal-400 border border-teal-500/20">
+                              <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded bg-teal-500/10 text-teal-400 border border-teal-500/20">
                                 Email Sent
                               </span>
                             )}
                             {!isUpcoming && !isEmail && (
-                              <span className="text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-450 border border-slate-700/30">
+                              <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700/30">
                                 Info
                               </span>
                             )}
                           </div>
-                          <p className="text-slate-350 font-medium leading-relaxed">{n.message}</p>
+                          <p className="text-slate-300 font-medium leading-relaxed">{n.message}</p>
                           <span className="text-[9px] text-slate-500 mt-1 block">
                             {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
