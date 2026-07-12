@@ -23,7 +23,7 @@ export const Notifications: React.FC = () => {
     setLoading(true);
     try {
       const data = await db.getNotifications(user.id);
-      setNotifications(data);
+      setNotifications(data.filter(n => n.type !== 'booking_reminder_1h'));
     } catch (err) {
       console.error('Error fetching notifications:', err);
     } finally {
