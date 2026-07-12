@@ -13,7 +13,7 @@ import { OrgSetup } from '../features/organization/OrgSetup';
 import { Login } from '../features/organization/Login';
 import { getMockData } from '../lib/mockDb';
 import { Asset, Booking, MaintenanceRequest, Notification, ActivityLog, Allocation, TransferRequest } from '../lib/types';
-import { ClipboardCheck, TrendingUp, History, Terminal, Landmark } from 'lucide-react';
+import { ClipboardCheck, TrendingUp, History, Terminal, Landmark, ArrowLeft, ArrowRight } from 'lucide-react';
 import { 
   LayoutDashboard, Wrench, CalendarDays, ShieldCheck, 
   FolderLock, Bell, LogOut, ChevronRight, Sparkles, User, Settings,
@@ -44,6 +44,36 @@ export const App: React.FC = () => {
   const [allocations, setAllocations] = useState<Allocation[]>([]);
   const [transfers, setTransfers] = useState<TransferRequest[]>([]);
 
+  // Navigation history states for Back/Forward buttons
+  const [historyStack, setHistoryStack] = useState<string[]>(['booking']);
+  const [historyPointer, setHistoryPointer] = useState<number>(0);
+
+  const navigateToTab = (tab: any, skipHistory = false) => {
+    setActiveTab(tab);
+    if (!skipHistory) {
+      const newStack = historyStack.slice(0, historyPointer + 1);
+      newStack.push(tab);
+      setHistoryStack(newStack);
+      setHistoryPointer(newStack.length - 1);
+    }
+  };
+
+  const handleGoBack = () => {
+    if (historyPointer > 0) {
+      const prevPointer = historyPointer - 1;
+      setHistoryPointer(prevPointer);
+      setActiveTab(historyStack[prevPointer] as any);
+    }
+  };
+
+  const handleGoForward = () => {
+    if (historyPointer < historyStack.length - 1) {
+      const nextPointer = historyPointer + 1;
+      setHistoryPointer(nextPointer);
+      setActiveTab(historyStack[nextPointer] as any);
+    }
+  };
+
   // Preselected parameters for linking tabs between Directory and Allocations (P2 feature integration)
   const [preselectAssetId, setPreselectAssetId] = useState<string | undefined>(undefined);
   const [preselectAction, setPreselectAction] = useState<'allocate' | 'return' | 'transfer' | undefined>(undefined);
@@ -51,7 +81,7 @@ export const App: React.FC = () => {
   const handleNavigateToAllocations = (assetId?: string, actionType?: 'allocate' | 'return' | 'transfer') => {
     setPreselectAssetId(assetId);
     setPreselectAction(actionType);
-    setActiveTab('allocations');
+    navigateToTab('allocations');
   };
 
   const clearPreselect = () => {
@@ -138,7 +168,7 @@ export const App: React.FC = () => {
         {/* Navigation Tabs */}
         <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
           <button
-            onClick={() => setActiveTab('dashboard')}
+            onClick={() => navigateToTab('dashboard')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
               activeTab === 'dashboard' 
                 ? 'bg-indigo-600/10 text-indigo-400 border-l-4 border-indigo-500' 
@@ -151,7 +181,7 @@ export const App: React.FC = () => {
 
           {role === 'admin' && (
             <button
-              onClick={() => setActiveTab('org')}
+              onClick={() => navigateToTab('org')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
                 activeTab === 'org' 
                   ? 'bg-indigo-600/10 text-indigo-400 border-l-4 border-indigo-500 font-bold' 
@@ -164,7 +194,7 @@ export const App: React.FC = () => {
           )}
 
           <button
-            onClick={() => setActiveTab('directory')}
+            onClick={() => navigateToTab('directory')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
               activeTab === 'directory' 
                 ? 'bg-indigo-600/10 text-indigo-400 border-l-4 border-indigo-500' 
@@ -176,7 +206,7 @@ export const App: React.FC = () => {
           </button>
 
           <button
-            onClick={() => setActiveTab('allocations')}
+            onClick={() => navigateToTab('allocations')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
               activeTab === 'allocations' 
                 ? 'bg-indigo-600/10 text-indigo-400 border-l-4 border-indigo-500' 
@@ -188,7 +218,7 @@ export const App: React.FC = () => {
           </button>
           
           <button
-            onClick={() => setActiveTab('booking')}
+            onClick={() => navigateToTab('booking')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
               activeTab === 'booking' 
                 ? 'bg-indigo-600/10 text-indigo-400 border-l-4 border-indigo-500' 
@@ -200,7 +230,7 @@ export const App: React.FC = () => {
           </button>
 
           <button
-            onClick={() => setActiveTab('maintenance')}
+            onClick={() => navigateToTab('maintenance')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
               activeTab === 'maintenance' 
                 ? 'bg-indigo-600/10 text-indigo-400 border-l-4 border-indigo-500' 
@@ -218,7 +248,7 @@ export const App: React.FC = () => {
             </span>
             
             <button
-              onClick={() => setActiveTab('audits')}
+              onClick={() => navigateToTab('audits')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
                 activeTab === 'audits' 
                   ? 'bg-indigo-600/10 text-indigo-400 border-l-4 border-indigo-500 font-bold' 
@@ -230,7 +260,7 @@ export const App: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab('reports')}
+              onClick={() => navigateToTab('reports')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
                 activeTab === 'reports' 
                   ? 'bg-indigo-600/10 text-indigo-400 border-l-4 border-indigo-500 font-bold' 
@@ -242,7 +272,7 @@ export const App: React.FC = () => {
             </button>
 
             <button
-              onClick={() => setActiveTab('logs')}
+              onClick={() => navigateToTab('logs')}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
                 activeTab === 'logs' 
                   ? 'bg-indigo-600/10 text-indigo-400 border-l-4 border-indigo-500 font-bold' 
@@ -291,31 +321,54 @@ export const App: React.FC = () => {
         {/* Top Header navbar */}
         <header className="h-16 border-b border-slate-900 bg-slate-950/20 backdrop-blur-md px-6 flex items-center justify-between shrink-0">
           
-          {/* User selector demo controls */}
-          {role === 'admin' ? (
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-indigo-950/30 border border-indigo-950 px-3 py-1.5 rounded-xl">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                <label className="text-[11px] font-bold text-indigo-300">Admin Access:</label>
-                <select
-                  value={profile?.id || ''}
-                  onChange={(e) => switchProfile(e.target.value)}
-                  className="bg-transparent text-slate-100 text-xs font-semibold focus:outline-none cursor-pointer"
-                >
-                  {allProfiles.filter(p => p.role !== 'admin' || p.id === profile?.id).map(p => (
-                    <option key={p.id} value={p.id} className="bg-slate-950 text-slate-100">
-                      {p.name} ({p.role.toUpperCase()})
-                    </option>
-                  ))}
-                </select>
+          <div className="flex items-center gap-4">
+            {/* History Navigation Buttons */}
+            <div className="flex items-center bg-slate-900/60 dark:bg-slate-950 border border-slate-800 rounded-xl p-1 shrink-0">
+              <button
+                onClick={handleGoBack}
+                disabled={historyPointer === 0}
+                className="p-1 text-slate-400 hover:text-white dark:hover:text-white hover:bg-slate-800/40 dark:hover:bg-slate-900 rounded-lg transition disabled:opacity-20 disabled:cursor-not-allowed"
+                title="Go Back"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+              <div className="w-[1px] h-4 bg-slate-800 mx-1" />
+              <button
+                onClick={handleGoForward}
+                disabled={historyPointer >= historyStack.length - 1}
+                className="p-1 text-slate-400 hover:text-white dark:hover:text-white hover:bg-slate-800/40 dark:hover:bg-slate-900 rounded-lg transition disabled:opacity-20 disabled:cursor-not-allowed"
+                title="Go Forward"
+              >
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* User selector demo controls */}
+            {role === 'admin' ? (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 bg-indigo-950/30 border border-indigo-950 px-3 py-1.5 rounded-xl">
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                  <label className="text-[11px] font-bold text-indigo-300">Admin Access:</label>
+                  <select
+                    value={profile?.id || ''}
+                    onChange={(e) => switchProfile(e.target.value)}
+                    className="bg-transparent text-slate-100 text-xs font-semibold focus:outline-none cursor-pointer"
+                  >
+                    {allProfiles.filter(p => p.role !== 'admin' || p.id === profile?.id).map(p => (
+                      <option key={p.id} value={p.id} className="bg-slate-950 text-slate-100">
+                        {p.name} ({p.role.toUpperCase()})
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-emerald-400 animate-pulse" />
-              <span className="text-xs text-slate-450 font-bold tracking-wide">Enterprise Session Verified</span>
-            </div>
-          )}
+            ) : (
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-400 animate-pulse" />
+                <span className="text-xs text-slate-450 font-bold tracking-wide">Enterprise Session Verified</span>
+              </div>
+            )}
+          </div>
 
           {/* Action alerts panel (Bell / Notifications) */}
           <div className="flex items-center gap-4 relative">
@@ -479,7 +532,7 @@ export const App: React.FC = () => {
                   <button 
                     onClick={() => {
                       if (role === 'admin' || role === 'asset_manager') {
-                        setActiveTab('directory');
+                        navigateToTab('directory');
                       } else {
                         alert('Only Admin or Asset Managers can register assets.');
                       }
@@ -489,13 +542,13 @@ export const App: React.FC = () => {
                     + Register New Asset
                   </button>
                   <button 
-                    onClick={() => setActiveTab('booking')}
+                    onClick={() => navigateToTab('booking')}
                     className="flex-1 min-w-[200px] flex items-center justify-center gap-2 py-3 px-4 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-xl text-sm font-semibold text-slate-200 transition cursor-pointer"
                   >
                     📅 Book Shared Resource
                   </button>
                   <button 
-                    onClick={() => setActiveTab('maintenance')}
+                    onClick={() => navigateToTab('maintenance')}
                     className="flex-1 min-w-[200px] flex items-center justify-center gap-2 py-3 px-4 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-xl text-sm font-semibold text-slate-200 transition cursor-pointer"
                   >
                     🔧 Raise Maintenance Request
