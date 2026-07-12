@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../lib/auth';
-import { Boxes, Mail, UserPlus, LogIn, Sparkles, CheckCircle2, Lock } from 'lucide-react';
+import { getMockData } from '../../lib/mockDb';
+import { Profile } from '../../lib/types';
+import { Boxes, Mail, UserPlus, LogIn, Sparkles, CheckCircle2, Lock, HelpCircle } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { login, signup } = useAuth();
   
-  // View mode: signin or signup
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  // View mode: signin, signup, or forgot
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin');
   
   // Form values
   const [email, setEmail] = useState('');
@@ -17,18 +19,20 @@ export const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [recoveryPassword, setRecoveryPassword] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     setSuccessMsg(null);
+    setRecoveryPassword(null);
     setLoading(true);
 
     try {
       if (mode === 'signin') {
         await login(email.trim(), password);
         setSuccessMsg('Logged in successfully!');
-      } else {
+      } else if (mode === 'signup') {
         if (!name.trim()) {
           throw new Error('Please enter your full name.');
         }
@@ -37,6 +41,15 @@ export const Login: React.FC = () => {
         }
         await signup(email.trim(), name.trim(), password);
         setSuccessMsg('Account registered successfully! Welcome to AssetFlow.');
+      } else if (mode === 'forgot') {
+        const list = getMockData<Profile>('profiles');
+        const found = list.find(p => p.email.toLowerCase() === email.toLowerCase());
+        if (!found) {
+          throw new Error('No profile found with this email.');
+        }
+        const pwd = found.password || 'password123';
+        setRecoveryPassword(pwd);
+        setSuccessMsg(`Recovery initiated: Your active password is shown below.`);
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'An error occurred during authentication.');
@@ -73,9 +86,17 @@ export const Login: React.FC = () => {
           </div>
         )}
         {successMsg && (
-          <div className="p-3.5 bg-emerald-950/20 border border-emerald-900/40 rounded-xl text-xs text-emerald-350 font-medium flex items-center gap-2 animate-slide-up">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-            {successMsg}
+          <div className="p-3.5 bg-emerald-950/20 border border-emerald-900/40 rounded-xl text-xs text-emerald-350 font-medium flex flex-col gap-2 animate-slide-up">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{successMsg}</span>
+            </div>
+            {recoveryPassword && (
+              <div className="mt-2 p-2 bg-slate-950/80 rounded-lg border border-emerald-800/20 text-center">
+                <span className="text-[10px] text-slate-500 block uppercase font-bold">Your Password</span>
+                <span className="text-sm font-mono text-emerald-400 font-extrabold">{recoveryPassword}</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -111,19 +132,37 @@ export const Login: React.FC = () => {
             </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-[10px] font-bold text-slate-500 uppercase">Password</label>
-            <div className="relative">
-              <input
-                type="password"
-                required
-                placeholder="Enter password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full p-3 pl-4 rounded-xl bg-slate-950/60 border border-slate-850 focus:border-indigo-500 text-xs font-semibold text-slate-200 outline-none transition"
-              />
+          {mode !== 'forgot' && (
+            <div className="space-y-1">
+              <div className="flex justify-between items-center">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Password</label>
+                {mode === 'signin' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('forgot');
+                      setErrorMsg(null);
+                      setSuccessMsg(null);
+                      setRecoveryPassword(null);
+                    }}
+                    className="text-[10px] text-indigo-400 hover:underline font-bold"
+                  >
+                    Forgot Password?
+                  </button>
+                )}
+              </div>
+              <div className="relative">
+                <input
+                  type="password"
+                  required
+                  placeholder="Enter password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full p-3 pl-4 rounded-xl bg-slate-950/60 border border-slate-850 focus:border-indigo-500 text-xs font-semibold text-slate-200 outline-none transition"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <button
             type="submit"
@@ -135,18 +174,38 @@ export const Login: React.FC = () => {
                 <LogIn className="w-4 h-4" />
                 Sign In
               </>
-            ) : (
+            ) : mode === 'signup' ? (
               <>
                 <UserPlus className="w-4 h-4" />
                 Register Account
+              </>
+            ) : (
+              <>
+                <HelpCircle className="w-4 h-4" />
+                Recover Password
               </>
             )}
           </button>
         </form>
 
         {/* Toggle Mode Switcher link */}
-        <div className="text-center pt-2 border-t border-slate-950/60">
-          {mode === 'signin' ? (
+        <div className="text-center pt-2 border-t border-slate-950/60 flex flex-col gap-2">
+          {mode !== 'signin' && (
+            <button
+              onClick={() => {
+                setMode('signin');
+                setErrorMsg(null);
+                setSuccessMsg(null);
+                setRecoveryPassword(null);
+                setPassword('');
+              }}
+              className="text-xs text-indigo-400 font-bold hover:underline cursor-pointer"
+            >
+              Back to Sign In
+            </button>
+          )}
+
+          {mode === 'signin' && (
             <p className="text-xs text-slate-400">
               New employee?{' '}
               <button
@@ -159,21 +218,6 @@ export const Login: React.FC = () => {
                 className="text-indigo-400 font-bold hover:underline cursor-pointer"
               >
                 Create Account
-              </button>
-            </p>
-          ) : (
-            <p className="text-xs text-slate-400">
-              Already registered?{' '}
-              <button
-                onClick={() => {
-                  setMode('signin');
-                  setErrorMsg(null);
-                  setSuccessMsg(null);
-                  setPassword('');
-                }}
-                className="text-indigo-400 font-bold hover:underline cursor-pointer"
-              >
-                Sign In
               </button>
             </p>
           )}

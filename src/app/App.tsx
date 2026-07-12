@@ -112,17 +112,19 @@ export const App: React.FC = () => {
             Command Dashboard
           </button>
 
-          <button
-            onClick={() => setActiveTab('org')}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
-              activeTab === 'org' 
-                ? 'bg-indigo-600/10 text-indigo-400 border-l-4 border-indigo-500' 
-                : 'text-slate-400 hover:text-white hover:bg-slate-900/30'
-            }`}
-          >
-            <Landmark className="w-5 h-5" />
-            Organization Setup
-          </button>
+          {role === 'admin' && (
+            <button
+              onClick={() => setActiveTab('org')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                activeTab === 'org' 
+                  ? 'bg-indigo-600/10 text-indigo-400 border-l-4 border-indigo-500 font-bold' 
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900/30'
+              }`}
+            >
+              <Landmark className="w-5 h-5" />
+              Organization Setup
+            </button>
+          )}
 
           <button
             onClick={() => setActiveTab('directory')}
@@ -324,7 +326,7 @@ export const App: React.FC = () => {
           {/* Tab Route Switching */}
           {activeTab === 'booking' && <ResourceBooking />}
           {activeTab === 'maintenance' && <MaintenanceManagement />}
-          {activeTab === 'org' && <OrgSetup />}
+          {activeTab === 'org' && role === 'admin' && <OrgSetup />}
           
           {/* Person 2 Features */}
           {activeTab === 'directory' && profile && (
