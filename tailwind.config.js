@@ -41,6 +41,19 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Custom in-between slate shades used across feature screens.
+        // Tailwind's default palette only ships the 50/100/.../900/950 stops;
+        // these fill the gaps so classes like `bg-slate-850` actually render.
+        slate: {
+          150: '#eef1f6',
+          250: '#dde3ec',
+          350: '#a3adc2',
+          450: '#7c8aa5',
+          550: '#5c6b87',
+          650: '#3f4a63',
+          750: '#28324a',
+          850: '#141b2e',
+        },
         // P2 Brand Palette
         brand: {
           50: '#f5f3ff',

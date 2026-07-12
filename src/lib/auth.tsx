@@ -99,7 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .select('*')
         .eq('id', uid)
         .single();
-      
+
       if (error) throw error;
       if (data) {
         setProfile(data as Profile);
@@ -131,11 +131,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
         throw new Error("No profile found with this email. Please sign up first.");
       }
-      
+
       const storedPassword = found.password || (found.role === 'admin' ? 'admin123' : 'employee123');
       if (password && password !== storedPassword) {
         setLoading(false);
         throw new Error("Incorrect password. Please try again.");
+      }
+
+      if (found.status === 'pending') {
+        setLoading(false);
+        throw new Error("Your account is pending administrator approval. Please contact an admin.");
+      }
+      if (found.status === 'inactive') {
+        setLoading(false);
+        throw new Error("Your account has been deactivated. Please contact an admin.");
       }
 
       localStorage.setItem('assetflow_current_user_id', found.id);
@@ -155,7 +164,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email,
       department_id: null,
       role: 'employee',
-      status: 'active',
+      status: 'pending',
       created_at: new Date().toISOString(),
       password: password || 'employee123'
     };
@@ -175,11 +184,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       list.push(newProfile);
       setMockData('profiles', list);
-      localStorage.setItem('assetflow_current_user_id', newId);
-      setUser({ id: newId, email });
-      setProfile(newProfile);
-      setRole('employee');
       setLoading(false);
+      throw new Error("PENDING_APPROVAL: Registration successful! Your account is pending administrator approval before you can login.");
     }
   };
 

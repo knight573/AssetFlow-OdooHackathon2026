@@ -233,7 +233,7 @@ export const OrgSetup: React.FC = () => {
     }
   };
 
-  const handleToggleEmployeeStatus = async (employeeId: string, currentStatus: 'active' | 'inactive') => {
+  const handleToggleEmployeeStatus = async (employeeId: string, currentStatus: 'active' | 'inactive' | 'pending') => {
     try {
       const nextStatus = currentStatus === 'active' ? 'inactive' : 'active';
       const rawList = JSON.parse(localStorage.getItem('assetflow_profiles') || '[]') as Profile[];
@@ -257,6 +257,30 @@ export const OrgSetup: React.FC = () => {
       setEditingId(null);
     } catch (err) {
       triggerFeedback('Failed to update employee details', 'error');
+    }
+  };
+
+  const handleApproveEmployee = async (employeeId: string) => {
+    try {
+      const rawList = JSON.parse(localStorage.getItem('assetflow_profiles') || '[]') as Profile[];
+      const updated = rawList.map(p => p.id === employeeId ? { ...p, status: 'active' as const } : p);
+      localStorage.setItem('assetflow_profiles', JSON.stringify(updated));
+      window.dispatchEvent(new CustomEvent('mock-db-change', { detail: { table: 'profiles' } }));
+      triggerFeedback('Employee approved successfully!', 'success');
+    } catch (err) {
+      triggerFeedback('Failed to approve employee', 'error');
+    }
+  };
+
+  const handleRejectEmployee = async (employeeId: string) => {
+    try {
+      const rawList = JSON.parse(localStorage.getItem('assetflow_profiles') || '[]') as Profile[];
+      const updated = rawList.filter(p => p.id !== employeeId);
+      localStorage.setItem('assetflow_profiles', JSON.stringify(updated));
+      window.dispatchEvent(new CustomEvent('mock-db-change', { detail: { table: 'profiles' } }));
+      triggerFeedback('Employee registration rejected and removed.', 'success');
+    } catch (err) {
+      triggerFeedback('Failed to reject employee', 'error');
     }
   };
 
@@ -689,6 +713,8 @@ export const OrgSetup: React.FC = () => {
                       <span className={`text-[10px] font-bold px-2 py-1 rounded-md uppercase ${
                         emp.status === 'active' 
                           ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                          : emp.status === 'pending'
+                          ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                           : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
                       }`}>
                         {emp.status}
@@ -697,7 +723,24 @@ export const OrgSetup: React.FC = () => {
 
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        {editingId === emp.id ? (
+                        {emp.status === 'pending' ? (
+                          <>
+                            <button
+                              onClick={() => handleApproveEmployee(emp.id)}
+                              className="px-2.5 py-1 bg-emerald-950 hover:bg-emerald-900 border border-emerald-800 rounded-lg text-emerald-400 hover:text-emerald-200 transition font-bold text-[10px] tracking-wide"
+                              title="Approve Candidate"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleRejectEmployee(emp.id)}
+                              className="px-2.5 py-1 bg-rose-950 hover:bg-rose-900 border border-rose-800 rounded-lg text-rose-400 hover:text-white transition font-bold text-[10px] tracking-wide"
+                              title="Reject & Delete Candidate"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        ) : editingId === emp.id ? (
                           <>
                             <button
                               onClick={() => handleSaveEdit(emp.id)}
@@ -707,7 +750,7 @@ export const OrgSetup: React.FC = () => {
                             </button>
                             <button
                               onClick={() => setEditingId(null)}
-                              className="px-2.5 py-1 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-lg text-slate-400 hover:text-white transition font-bold text-[10px] tracking-wide"
+                              className="px-2.5 py-1 bg-slate-900 hover:bg-slate-855 border border-slate-800 rounded-lg text-slate-400 hover:text-white transition font-bold text-[10px] tracking-wide"
                             >
                               Cancel
                             </button>
@@ -735,7 +778,7 @@ export const OrgSetup: React.FC = () => {
                               {emp.status === 'active' ? (
                                 <UserCheck className="w-5 h-5 text-emerald-400" />
                               ) : (
-                                <UserCheck className="w-5 h-5 text-slate-650" />
+                                <UserCheck className="w-5 h-5 text-slate-655" />
                               )}
                             </button>
                           </>

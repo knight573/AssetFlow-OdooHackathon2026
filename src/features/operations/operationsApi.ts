@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
-import { Booking, MaintenanceRequest, Asset, Profile } from '../../lib/types';
+import { Booking, MaintenanceRequest, Asset, Profile, Notification } from '../../lib/types';
 import { getMockData, setMockData, updateMockRow, insertMockRow } from '../../lib/mockDb';
 import { logActivity } from '../../lib/activity';
 
@@ -179,6 +179,22 @@ export async function createBooking(
     notifyType: 'booking_confirmed'
   });
 
+  // Create simulated Booking Confirmation Email Notification
+  const profilesList = getMockData<Profile>('profiles');
+  const userProfile = profilesList.find(p => p.id === bookedBy);
+  const userEmail = userProfile ? userProfile.email : 'user@company.com';
+  
+  insertMockRow<Notification>('notifications', {
+    id: crypto.randomUUID(),
+    user_id: bookedBy,
+    type: 'mock_email',
+    message: `✉️ [Email Sent to ${userEmail}] Booking Confirmed: "${purpose}" (${resourceName}) has been reserved. Start: ${new Date(startTime).toLocaleString()}`,
+    related_entity_type: 'booking',
+    related_entity_id: id,
+    is_read: false,
+    created_at: created_at
+  });
+
   return newBooking;
 }
 
@@ -253,7 +269,8 @@ export async function createMaintenanceRequest(
   assetId: string,
   raisedBy: string,
   description: string,
-  priority: 'low' | 'medium' | 'high'
+  priority: 'low' | 'medium' | 'high',
+  photoUrl: string | null = null
 ): Promise<MaintenanceRequest> {
   const id = crypto.randomUUID();
   const created_at = new Date().toISOString();
@@ -263,7 +280,7 @@ export async function createMaintenanceRequest(
     raised_by: raisedBy,
     issue_description: description,
     priority,
-    photo_url: null,
+    photo_url: photoUrl,
     status: 'pending',
     technician_name: null,
     approved_by: null,
@@ -280,6 +297,7 @@ export async function createMaintenanceRequest(
         raised_by: raisedBy,
         issue_description: description,
         priority,
+        photo_url: photoUrl,
         status: 'pending'
       });
     if (error) {

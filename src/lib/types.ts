@@ -32,7 +32,7 @@ export interface Profile {
   email: string;
   department_id: string | null;
   role: UserRole;
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'pending';
   created_at: string;
   password?: string;
 }
