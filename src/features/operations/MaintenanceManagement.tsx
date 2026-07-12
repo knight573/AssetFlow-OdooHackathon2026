@@ -24,6 +24,19 @@ export const MaintenanceManagement: React.FC = () => {
   const [formDescription, setFormDescription] = useState('');
   const [formPriority, setFormPriority] = useState<'low' | 'medium' | 'high'>('medium');
   const [formPhotoUrl, setFormPhotoUrl] = useState('');
+  const [formPhoto, setFormPhoto] = useState<string | null>(null);
+  const [selectedLightboxPhoto, setSelectedLightboxPhoto] = useState<string | null>(null);
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormPhoto(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
   
   // Inspection History tab
   const [historyAssetId, setHistoryAssetId] = useState('');
@@ -67,10 +80,17 @@ export const MaintenanceManagement: React.FC = () => {
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      await createMaintenanceRequest(formAssetId, profile.id, formDescription, formPriority, formPhotoUrl || null);
+      await createMaintenanceRequest(
+        formAssetId, 
+        profile.id, 
+        formDescription, 
+        formPriority, 
+        formPhoto || formPhotoUrl || null
+      );
       setSuccessMessage("Maintenance request submitted successfully!");
       setFormDescription('');
       setFormPhotoUrl('');
+      setFormPhoto(null);
       setTimeout(() => {
         setIsNewModalOpen(false);
         setSuccessMessage(null);
@@ -232,8 +252,14 @@ export const MaintenanceManagement: React.FC = () => {
 
                         {/* Photo preview block */}
                         {req.photo_url && (
-                          <div className="w-full h-24 rounded-lg overflow-hidden border border-slate-900 bg-slate-950 flex items-center justify-center">
-                            <img src={req.photo_url} alt="malfunction preview" className="object-cover w-full h-full" />
+                          <div 
+                            className="w-full h-24 rounded-lg overflow-hidden border border-slate-900 bg-slate-950 flex items-center justify-center cursor-zoom-in relative group/img"
+                            onClick={() => setSelectedLightboxPhoto(req.photo_url || null)}
+                          >
+                            <img src={req.photo_url} alt="malfunction preview" className="object-cover w-full h-full hover:scale-105 transition-transform" />
+                            <div className="absolute bottom-1 right-1 bg-black/60 px-1 py-0.5 rounded text-[8px] font-bold text-slate-350 opacity-0 group-hover/img:opacity-100 transition-opacity">
+                              Enlarge
+                            </div>
                           </div>
                         )}
 
@@ -384,22 +410,46 @@ export const MaintenanceManagement: React.FC = () => {
                 />
               </div>
 
-              {/* Photo URL Attachment */}
+              {/* Photo Attachment (URL or Local File) */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Photo Attachment URL</label>
+                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Evidence Photo</label>
                   <span className="text-[10px] text-slate-500 italic">Optional</span>
                 </div>
-                <input
-                  type="url"
-                  placeholder="e.g. https://images.unsplash.com/photo-1588508065123-287b28e013da?w=600"
-                  value={formPhotoUrl}
-                  onChange={(e) => setFormPhotoUrl(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-900 rounded-xl px-4 py-3 text-slate-200 text-sm focus:border-indigo-500 focus:outline-none transition-all placeholder:text-slate-600"
-                />
-                {formPhotoUrl && (
-                  <div className="mt-2 relative w-20 h-20 rounded-xl border border-slate-800 overflow-hidden bg-slate-950 flex items-center justify-center">
-                    <img src={formPhotoUrl} alt="Preview" className="object-cover w-full h-full" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
+                <div className="space-y-2">
+                  <input
+                    type="url"
+                    placeholder="Paste image URL (e.g. https://...)..."
+                    value={formPhotoUrl}
+                    onChange={(e) => {
+                      setFormPhotoUrl(e.target.value);
+                      setFormPhoto(null); // clear file choice if url is pasted
+                    }}
+                    className="w-full bg-slate-950 border border-slate-900 rounded-xl px-4 py-2.5 text-slate-200 text-xs focus:border-indigo-500 focus:outline-none transition-all placeholder:text-slate-600"
+                  />
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] text-slate-500 font-bold uppercase">Or Choose Local File:</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoChange}
+                      className="text-xs text-slate-450 file:mr-3 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-[10px] file:font-extrabold file:bg-indigo-950/40 file:text-indigo-400 file:cursor-pointer hover:file:bg-indigo-900/40"
+                    />
+                  </div>
+                </div>
+                {(formPhoto || formPhotoUrl) && (
+                  <div className="relative mt-3 rounded-xl overflow-hidden border border-slate-900 max-h-32 flex items-center justify-center bg-slate-950/40">
+                    <img src={formPhoto || formPhotoUrl} alt="Evidence preview" className="object-cover w-full h-full" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormPhoto(null);
+                        setFormPhotoUrl('');
+                      }}
+                      className="absolute top-1.5 right-1.5 bg-black/75 hover:bg-black/90 p-1.5 rounded-full text-rose-400 transition"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 )}
               </div>
@@ -544,7 +594,10 @@ export const MaintenanceManagement: React.FC = () => {
                           </p>
                         )}
                         {r.photo_url && (
-                          <div className="mt-2 w-16 h-16 rounded overflow-hidden border border-slate-800">
+                          <div 
+                            className="mt-2 w-16 h-16 rounded overflow-hidden border border-slate-800 cursor-zoom-in hover:scale-105 transition-transform"
+                            onClick={() => setSelectedLightboxPhoto(r.photo_url || null)}
+                          >
                             <img src={r.photo_url} alt="Attachment Preview" className="object-cover w-full h-full" />
                           </div>
                         )}
@@ -552,8 +605,8 @@ export const MaintenanceManagement: React.FC = () => {
                       
                       {end && (
                         <div className="text-right text-slate-450 shrink-0">
-                          <p className="font-semibold text-slate-300">Resolved Date</p>
-                          <p>{end.toLocaleString()}</p>
+                           <p className="font-semibold text-slate-300">Resolved Date</p>
+                           <p>{end.toLocaleString()}</p>
                         </div>
                       )}
                     </div>
@@ -564,6 +617,28 @@ export const MaintenanceManagement: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Photo Lightbox Modal */}
+      {selectedLightboxPhoto && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-sm cursor-zoom-out animate-fade-in"
+          onClick={() => setSelectedLightboxPhoto(null)}
+        >
+          <div className="relative max-w-4xl max-h-[85vh] overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 flex items-center justify-center shadow-2xl">
+            <img 
+              src={selectedLightboxPhoto} 
+              alt="Evidence high resolution" 
+              className="max-w-full max-h-[80vh] object-contain"
+            />
+            <button
+              onClick={() => setSelectedLightboxPhoto(null)}
+              className="absolute top-3 right-3 bg-black/60 hover:bg-black/80 p-2 rounded-xl text-white transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

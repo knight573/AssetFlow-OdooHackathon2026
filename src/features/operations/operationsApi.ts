@@ -316,7 +316,7 @@ export async function createMaintenanceRequest(
     action: 'maintenance_raised',
     entityType: 'maintenance_request',
     entityId: id,
-    details: { assetLabel, priority, description },
+    details: { assetLabel, asset_id: assetId, asset_tag: asset?.tag, priority, description },
     notifyUserId: raisedBy,
     notifyMessage: `Raised a ${priority} priority maintenance request for ${assetLabel}`,
     notifyType: 'maintenance_raised'
@@ -410,7 +410,7 @@ export async function updateMaintenanceStatus(
     action: `maintenance_${status}`,
     entityType: 'maintenance_request',
     entityId: id,
-    details: { assetLabel, status, technician: extra?.technicianName },
+    details: { assetLabel, asset_id: assetId, asset_tag: asset?.tag, status, technician: extra?.technicianName },
     notifyUserId: currentReq.raised_by || undefined,
     notifyMessage: logMsg,
     notifyType: `maintenance_${status}`

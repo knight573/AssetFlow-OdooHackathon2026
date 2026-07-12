@@ -17,7 +17,8 @@ import {
   QrCode,
   Scan,
   Camera,
-  X
+  X,
+  Wrench
 } from 'lucide-react';
 import type { Asset, Profile, Department, Category, AssetStatus, AssetCondition, Allocation } from '../../lib/types';
 import { localDb } from '../../lib/supabase';
@@ -238,7 +239,10 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
       setExpandedAssetId(asset.id);
       // Fetch activity logs linked to this asset ID
       const logs = localDb.getActivityLogs()
-        .filter(log => log.entity_id === asset.id || (log.details && log.details.asset_tag === asset.tag));
+        .filter(log => 
+          log.entity_id === asset.id || 
+          (log.details && (log.details.asset_id === asset.id || log.details.asset_tag === asset.tag))
+        );
       setAssetHistory(logs);
     }
   };
@@ -890,6 +894,32 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
                                             return {
                                               icon: <HelpCircle className="h-3 w-3" />,
                                               color: 'bg-violet-500/10 text-violet-400 border-violet-500/30'
+                                            };
+                                          case 'maintenance_raised':
+                                          case 'maintenance_pending':
+                                            return {
+                                              icon: <Wrench className="h-3 w-3" />,
+                                              color: 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                                            };
+                                          case 'maintenance_approved':
+                                            return {
+                                              icon: <Wrench className="h-3 w-3" />,
+                                              color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30'
+                                            };
+                                          case 'maintenance_technician_assigned':
+                                            return {
+                                              icon: <Wrench className="h-3 w-3" />,
+                                              color: 'bg-violet-500/10 text-violet-400 border-violet-500/30'
+                                            };
+                                          case 'maintenance_in_progress':
+                                            return {
+                                              icon: <Wrench className="h-3 w-3" />,
+                                              color: 'bg-sky-500/10 text-sky-400 border-sky-500/30'
+                                            };
+                                          case 'maintenance_resolved':
+                                            return {
+                                              icon: <Wrench className="h-3 w-3" />,
+                                              color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                                             };
                                           default:
                                             return {
