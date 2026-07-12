@@ -18,7 +18,8 @@ import {
   Scan,
   Camera,
   X,
-  Wrench
+  Wrench,
+  Pencil
 } from 'lucide-react';
 import type { Asset, Profile, Department, Category, AssetStatus, AssetCondition, Allocation, AssetDocument, MaintenanceRequest } from '../../lib/types';
 import { localDb } from '../../lib/supabase';
@@ -62,6 +63,19 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
   const [docNameInput, setDocNameInput] = useState('');
   const [docUrlInput, setDocUrlInput] = useState('');
   const [formError, setFormError] = useState('');
+
+  // Edit Asset Form States
+  const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
+  const [editAssetName, setEditAssetName] = useState('');
+  const [editAssetSerial, setEditAssetSerial] = useState('');
+  const [editAssetCategory, setEditAssetCategory] = useState('');
+  const [editAssetDept, setEditAssetDept] = useState('');
+  const [editAssetCondition, setEditAssetCondition] = useState<AssetCondition>('Good');
+  const [editAssetBookable, setEditAssetBookable] = useState(false);
+  const [editAssetCost, setEditAssetCost] = useState('');
+  const [editAssetAcquisitionDate, setEditAssetAcquisitionDate] = useState('');
+  const [editAssetPhotoUrl, setEditAssetPhotoUrl] = useState('');
+  const [editAssetLocation, setEditAssetLocation] = useState('');
 
   // Expand Asset Log History
   const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null);
@@ -190,6 +204,74 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
     setDocNameInput('');
     setDocUrlInput('');
     setShowRegisterPanel(false);
+    loadData();
+  };
+
+  const handleOpenEditModal = (asset: Asset) => {
+    setEditingAsset(asset);
+    setEditAssetName(asset.name);
+    setEditAssetSerial(asset.serial_number || '');
+    setEditAssetCondition(asset.condition);
+    setEditAssetLocation(asset.location || '');
+    setEditAssetCategory(asset.category_id);
+    setEditAssetDept(asset.department_id || '');
+    setEditAssetCost(asset.acquisition_cost ? String(asset.acquisition_cost) : '');
+    setEditAssetAcquisitionDate(asset.acquisition_date || '');
+    setEditAssetPhotoUrl(asset.photo_url || asset.image_url || '');
+    setEditAssetBookable(asset.is_bookable || false);
+  };
+
+  const handleSaveEditAsset = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAsset) return;
+
+    if (!editAssetName.trim()) {
+      alert('Asset name is required.');
+      return;
+    }
+    if (!editAssetCategory) {
+      alert('Asset category is required.');
+      return;
+    }
+
+    const allAssets = localDb.getAssets();
+    const updatedAssets = allAssets.map(a => {
+      if (a.id === editingAsset.id) {
+        return {
+          ...a,
+          name: editAssetName.trim(),
+          serial_number: editAssetSerial.trim() || null,
+          condition: editAssetCondition,
+          location: editAssetLocation.trim() || null,
+          category_id: editAssetCategory,
+          department_id: editAssetDept || null,
+          is_bookable: editAssetBookable,
+          acquisition_cost: editAssetCost ? parseFloat(editAssetCost) : null,
+          acquisition_date: editAssetAcquisitionDate || null,
+          photo_url: editAssetPhotoUrl.trim() || null,
+          image_url: editAssetPhotoUrl.trim() || undefined,
+        };
+      }
+      return a;
+    });
+
+    localDb.saveAssets(updatedAssets);
+    setAssets(updatedAssets);
+
+    // Log Activity
+    logActivity({
+      actorId: currentUser.id,
+      action: 'status_transition',
+      entityType: 'asset',
+      entityId: editingAsset.id,
+      details: {
+        asset_tag: editingAsset.tag,
+        asset_name: editAssetName.trim(),
+        message: `Asset details manually modified by ${currentUser.name}.`
+      }
+    });
+
+    setEditingAsset(null);
     loadData();
   };
 
@@ -837,6 +919,17 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
                         {/* Actions */}
                         <td className="px-6 py-4.5 text-right">
                           <div className="flex items-center justify-end gap-1.5">
+                            {/* Edit Details */}
+                            {isAssetManagerOrAdmin && (
+                              <button
+                                onClick={() => handleOpenEditModal(asset)}
+                                title="Edit Asset Details"
+                                className="p-2 rounded-lg border text-xs font-bold transition-all bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
+                              >
+                                <Pencil className="h-4.5 w-4.5" />
+                              </button>
+                            )}
+
                             {/* Expand History Logs */}
                             <button
                               onClick={() => toggleHistory(asset)}
@@ -1252,6 +1345,171 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
                 {isScanning ? "Aiming at tag barcode sequence..." : "Verifying Odoo ERP database matches..."}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+      {/* Edit Asset Details Dialog Modal */}
+      {editingAsset && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="w-full max-w-lg overflow-hidden glass-panel rounded-2xl shadow-2xl border border-slate-800 bg-[#0c101d] max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-6 border-b border-slate-900 shrink-0">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Pencil className="w-5 h-5 text-indigo-400" />
+                Edit Asset Details - {editingAsset.tag}
+              </h3>
+              <button
+                onClick={() => setEditingAsset(null)}
+                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-900 transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditAsset} className="p-6 space-y-4 overflow-y-auto flex-1 text-slate-200">
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5 font-bold">Asset Name *</label>
+                <input
+                  type="text"
+                  required
+                  value={editAssetName}
+                  onChange={(e) => setEditAssetName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-brand-500 transition-colors"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5 font-bold">Serial Number</label>
+                  <input
+                    type="text"
+                    value={editAssetSerial}
+                    onChange={(e) => setEditAssetSerial(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-brand-500 transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5 font-bold">Condition</label>
+                  <select
+                    value={editAssetCondition}
+                    onChange={(e) => setEditAssetCondition(e.target.value as AssetCondition)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-brand-500 transition-colors"
+                  >
+                    <option value="Excellent">Excellent</option>
+                    <option value="Good">Good</option>
+                    <option value="Fair">Fair</option>
+                    <option value="Poor">Poor</option>
+                    <option value="Damaged">Damaged</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5 font-bold">Category *</label>
+                  <select
+                    value={editAssetCategory}
+                    onChange={(e) => setEditAssetCategory(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-brand-500 transition-colors"
+                  >
+                    <option value="">-- Choose Category --</option>
+                    {categories.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5 font-bold">Department</label>
+                  <select
+                    value={editAssetDept}
+                    onChange={(e) => setEditAssetDept(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-brand-500 transition-colors"
+                  >
+                    <option value="">-- Unassigned / Central --</option>
+                    {departments.map(d => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5 font-bold">Location / Room *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editAssetLocation}
+                    onChange={(e) => setEditAssetLocation(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-brand-500 transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5 font-bold">Asset Image URL</label>
+                  <input
+                    type="url"
+                    value={editAssetPhotoUrl}
+                    onChange={(e) => setEditAssetPhotoUrl(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-brand-500 transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5 font-bold">Cost (₹)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={editAssetCost}
+                    onChange={(e) => setEditAssetCost(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-brand-500 transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5 font-bold">Acquisition Date</label>
+                  <input
+                    type="date"
+                    value={editAssetAcquisitionDate}
+                    onChange={(e) => setEditAssetAcquisitionDate(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-brand-500 transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <label className="flex items-center gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={editAssetBookable}
+                    onChange={(e) => setEditAssetBookable(e.target.checked)}
+                    className="h-4.5 w-4.5 rounded bg-slate-950 border-slate-800 text-brand-600 focus:ring-brand-500/20"
+                  />
+                  <div>
+                    <span className="text-sm font-semibold text-slate-200">Shared Resource (Bookable)</span>
+                  </div>
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-850 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setEditingAsset(null)}
+                  className="px-4.5 py-2 rounded-xl border border-slate-850 hover:bg-slate-800 text-xs font-bold text-slate-400 hover:text-white transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-xs font-bold text-white transition-colors shadow shadow-brand-600/10"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
