@@ -255,23 +255,30 @@ export const App: React.FC = () => {
         <header className="h-16 border-b border-slate-900 bg-slate-950/20 backdrop-blur-md px-6 flex items-center justify-between shrink-0">
           
           {/* User selector demo controls */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-indigo-950/30 border border-indigo-950 px-3 py-1.5 rounded-xl">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-              <label className="text-[11px] font-bold text-indigo-300">DEMO PROFILE SWITCHER:</label>
-              <select
-                value={profile?.id || ''}
-                onChange={(e) => switchProfile(e.target.value)}
-                className="bg-transparent text-slate-100 text-xs font-semibold focus:outline-none cursor-pointer"
-              >
-                {allProfiles.map(p => (
-                  <option key={p.id} value={p.id} className="bg-slate-950 text-slate-100">
-                    {p.name} ({p.role.toUpperCase()})
-                  </option>
-                ))}
-              </select>
+          {role === 'admin' ? (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 bg-indigo-950/30 border border-indigo-950 px-3 py-1.5 rounded-xl">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                <label className="text-[11px] font-bold text-indigo-300">DEMO PROFILE SWITCHER:</label>
+                <select
+                  value={profile?.id || ''}
+                  onChange={(e) => switchProfile(e.target.value)}
+                  className="bg-transparent text-slate-100 text-xs font-semibold focus:outline-none cursor-pointer"
+                >
+                  {allProfiles.map(p => (
+                    <option key={p.id} value={p.id} className="bg-slate-950 text-slate-100">
+                      {p.name} ({p.role.toUpperCase()})
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-400 animate-pulse" />
+              <span className="text-xs text-slate-450 font-bold tracking-wide">Enterprise Session Verified</span>
+            </div>
+          )}
 
           {/* Action alerts panel (Bell / Notifications) */}
           <div className="flex items-center gap-4 relative">
