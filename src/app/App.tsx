@@ -2,17 +2,29 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../lib/auth';
 import { ResourceBooking } from '../features/operations/ResourceBooking';
 import { MaintenanceManagement } from '../features/operations/MaintenanceManagement';
+import AssetDirectory from '../features/assets/AssetDirectory';
+import AllocationTransfer from '../features/assets/AllocationTransfer';
 import { getMockData } from '../lib/mockDb';
 import { Asset, Booking, MaintenanceRequest, Notification, ActivityLog } from '../lib/types';
 import { 
   LayoutDashboard, Wrench, CalendarDays, ShieldCheck, 
-  FolderLock, Bell, LogOut, ChevronRight, Sparkles, User, Settings
+  FolderLock, Bell, LogOut, ChevronRight, Sparkles, User, Settings, Layers
 } from 'lucide-react';
 
 export const App: React.FC = () => {
   const { user, profile, role, switchProfile, allProfiles, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'booking' | 'maintenance' | 'placeholder'>('booking');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'booking' | 'maintenance' | 'directory' | 'allocations' | 'placeholder'>('directory');
   const [showNotifications, setShowNotifications] = useState(false);
+
+  // Preselected parameters for linking tabs
+  const [preselectAssetId, setPreselectAssetId] = useState<string | undefined>(undefined);
+  const [preselectAction, setPreselectAction] = useState<'allocate' | 'return' | 'transfer' | undefined>(undefined);
+
+  const handleNavigateToAllocations = (assetId?: string, actionType?: 'allocate' | 'return' | 'transfer') => {
+    setPreselectAssetId(assetId);
+    setPreselectAction(actionType);
+    setActiveTab('allocations');
+  };
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -90,30 +102,46 @@ export const App: React.FC = () => {
             Repair Kanban Board
           </button>
 
-          {/* Placeholder buttons for other teams */}
-          <div className="pt-6 border-t border-slate-950/80 mt-4 space-y-1">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-4 block mb-2">
-              Other Modules
+          {/* Module tabs */}
+          <div className="pt-6 border-t border-slate-900/85 mt-4 space-y-1.5">
+            <span className="text-[10px] font-bold text-slate-550 uppercase tracking-widest px-4 block mb-2">
+              Hardware Registry (P2)
+            </span>
+            <button
+              onClick={() => setActiveTab('directory')}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                activeTab === 'directory' 
+                  ? 'bg-indigo-600/10 text-indigo-400 border-l-4 border-indigo-500' 
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900/30'
+              }`}
+            >
+              <FolderLock className="w-5 h-5" />
+              Asset Directory
+            </button>
+            <button
+              onClick={() => setActiveTab('allocations')}
+              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                activeTab === 'allocations' 
+                  ? 'bg-indigo-600/10 text-indigo-400 border-l-4 border-indigo-500' 
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900/30'
+              }`}
+            >
+              <Layers className="w-5 h-5" />
+              Allocations & Transfers
+            </button>
+
+            <span className="text-[10px] font-bold text-slate-550 uppercase tracking-widest px-4 block pt-4 mb-2">
+              Governance (P4)
             </span>
             <button
               onClick={() => setActiveTab('placeholder')}
-              className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs text-slate-500 hover:text-slate-300 hover:bg-slate-900/10 transition-all text-left"
-            >
-              <span className="flex items-center gap-2">
-                <FolderLock className="w-4 h-4" />
-                Asset Directory (P2)
-              </span>
-              <ChevronRight className="w-3.5 h-3.5 opacity-40" />
-            </button>
-            <button
-              onClick={() => setActiveTab('placeholder')}
-              className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs text-slate-500 hover:text-slate-300 hover:bg-slate-900/10 transition-all text-left"
+              className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs text-slate-500 hover:text-slate-350 hover:bg-slate-900/10 transition-all text-left"
             >
               <span className="flex items-center gap-2">
                 <ShieldCheck className="w-4 h-4" />
-                Governance & Audit (P4)
+                Audit & Reports
               </span>
-              <ChevronRight className="w-3.5 h-3.5 opacity-40" />
+              <ChevronRight className="w-3.5 h-3.5 opacity-45" />
             </button>
           </div>
         </nav>
@@ -217,6 +245,25 @@ export const App: React.FC = () => {
           {/* Tab Route Switching */}
           {activeTab === 'booking' && <ResourceBooking />}
           {activeTab === 'maintenance' && <MaintenanceManagement />}
+          
+          {activeTab === 'directory' && profile && (
+            <AssetDirectory 
+              currentUser={profile} 
+              onNavigateToAllocations={handleNavigateToAllocations} 
+            />
+          )}
+
+          {activeTab === 'allocations' && profile && (
+            <AllocationTransfer
+              currentUser={profile}
+              preselectedAssetId={preselectAssetId}
+              initialAction={preselectAction}
+              clearPreselect={() => {
+                setPreselectAssetId(undefined);
+                setPreselectAction(undefined);
+              }}
+            />
+          )}
           
           {/* Dashboard Tab mock preview */}
           {activeTab === 'dashboard' && (
