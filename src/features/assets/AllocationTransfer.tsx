@@ -11,7 +11,7 @@ import {
   HelpCircle,
   FileCheck2
 } from 'lucide-react';
-import type { Asset, Profile, Allocation, TransferRequest, AssetCondition } from '../../lib/types';
+import type { Asset, Profile, Allocation, TransferRequest, AssetCondition, Department } from '../../lib/types';
 import { localDb } from '../../lib/supabase';
 import { logActivity } from '../../lib/activity';
 
@@ -34,12 +34,15 @@ export default function AllocationTransfer({
   // Database States
   const [assets, setAssets] = useState<Asset[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [allocations, setAllocations] = useState<Allocation[]>([]);
   const [transfers, setTransfers] = useState<TransferRequest[]>([]);
 
   // Form states - Allocate
   const [selectedAssetId, setSelectedAssetId] = useState('');
+  const [allocationTarget, setAllocationTarget] = useState<'employee' | 'department'>('employee');
   const [selectedProfileId, setSelectedProfileId] = useState('');
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState('');
   const [expectedReturnDate, setExpectedReturnDate] = useState('');
   const [allocationNotes, setAllocationNotes] = useState('');
   const [allocationMessage, setAllocationMessage] = useState<{ type: 'success' | 'error' | 'warning', text: string } | null>(null);
@@ -63,11 +66,53 @@ export default function AllocationTransfer({
     setProfiles(localDb.getProfiles());
     setAllocations(localDb.getAllocations());
     setTransfers(localDb.getTransfers());
+    setDepartments(localDb.getDepartments());
   };
 
   useEffect(() => {
     loadData();
   }, []);
+
+  // Background Overdue returns auto-flagging engine
+  useEffect(() => {
+    if (allocations.length === 0 || !currentUser) return;
+    
+    let notificationsAdded = false;
+    const currentNotes = localDb.getNotifications();
+    const newNotifications = [...currentNotes];
+
+    allocations.forEach(al => {
+      const returnDate = al.expected_return_date || al.expected_return_at;
+      if (al.status === 'active' && returnDate && new Date(returnDate) < new Date()) {
+        const assetObj = assets.find(a => a.id === al.asset_id);
+        const uniqueMsg = `Asset Return Overdue Alert: ${assetObj?.tag} (${assetObj?.name}) was expected by ${new Date(returnDate).toLocaleDateString()}.`;
+        
+        if (!newNotifications.some(n => n.message === uniqueMsg)) {
+          newNotifications.push({
+            id: 'note-od-' + Math.random().toString(36).substring(2, 9),
+            user_id: al.profile_id || al.employee_id || currentUser.id,
+            message: uniqueMsg,
+            is_read: false,
+            type: 'overdue',
+            created_at: new Date().toISOString()
+          });
+          notificationsAdded = true;
+
+          logActivity({
+            actorId: 'system',
+            action: 'return_overdue',
+            entityType: 'allocation',
+            entityId: al.id,
+            details: { asset_tag: assetObj?.tag, expected_date: returnDate }
+          });
+        }
+      }
+    });
+
+    if (notificationsAdded) {
+      localDb.saveNotifications(newNotifications);
+    }
+  }, [allocations, assets, currentUser]);
 
   // Preselection logic from Directory screen
   useEffect(() => {
@@ -125,8 +170,12 @@ export default function AllocationTransfer({
       setAllocationMessage({ type: 'error', text: 'Please select an asset to allocate.' });
       return;
     }
-    if (!selectedProfileId) {
+    if (allocationTarget === 'employee' && !selectedProfileId) {
       setAllocationMessage({ type: 'error', text: 'Please select an employee assignee.' });
+      return;
+    }
+    if (allocationTarget === 'department' && !selectedDepartmentId) {
+      setAllocationMessage({ type: 'error', text: 'Please select a department assignee.' });
       return;
     }
 
@@ -140,10 +189,13 @@ export default function AllocationTransfer({
     const newAllocation: Allocation = {
       id: 'alloc-' + Math.random().toString(36).substring(2, 11),
       asset_id: selectedAssetId,
-      profile_id: selectedProfileId,
+      profile_id: allocationTarget === 'employee' ? selectedProfileId : undefined,
+      employee_id: allocationTarget === 'employee' ? selectedProfileId : null,
+      department_id: allocationTarget === 'department' ? selectedDepartmentId : null,
       status: 'active',
       allocated_at: new Date().toISOString(),
       expected_return_at: expectedReturnDate ? new Date(expectedReturnDate).toISOString() : undefined,
+      expected_return_date: expectedReturnDate ? new Date(expectedReturnDate).toISOString() : null,
       notes: allocationNotes.trim() || undefined,
       created_at: new Date().toISOString()
     };
@@ -159,6 +211,8 @@ export default function AllocationTransfer({
 
     const targetAsset = allAssets.find(a => a.id === selectedAssetId);
     const assignee = profiles.find(p => p.id === selectedProfileId);
+    const deptAssignee = localDb.getDepartments().find(d => d.id === selectedDepartmentId);
+    const assigneeName = allocationTarget === 'employee' ? assignee?.name : `${deptAssignee?.name} Department`;
 
     // Log Activity
     logActivity({
@@ -169,16 +223,17 @@ export default function AllocationTransfer({
       details: {
         asset_tag: targetAsset?.tag,
         asset_name: targetAsset?.name,
-        assignee: assignee?.name
+        assignee: assigneeName
       },
-      notifyUserId: selectedProfileId,
-      notifyMessage: `Asset ${targetAsset?.tag} - "${targetAsset?.name}" has been allocated to you. Expected return: ${expectedReturnDate || 'Indefinite'}.`,
+      notifyUserId: allocationTarget === 'employee' ? selectedProfileId : undefined,
+      notifyMessage: `Asset ${targetAsset?.tag} - "${targetAsset?.name}" has been allocated to ${assigneeName}. Expected return: ${expectedReturnDate || 'Indefinite'}.`,
       notifyType: 'allocation'
     });
 
-    setAllocationMessage({ type: 'success', text: `Successfully allocated asset to ${assignee?.name}!` });
+    setAllocationMessage({ type: 'success', text: `Successfully allocated asset to ${assigneeName}!` });
     setSelectedAssetId('');
     setSelectedProfileId('');
+    setSelectedDepartmentId('');
     setExpectedReturnDate('');
     setAllocationNotes('');
     loadData();
@@ -500,22 +555,69 @@ export default function AllocationTransfer({
                 </select>
               </div>
 
-              {/* Assignee Select */}
+              {/* Allocation Target Selection */}
               <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5">Assignee Employee</label>
-                <select
-                  value={selectedProfileId}
-                  onChange={(e) => setSelectedProfileId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-brand-500"
-                >
-                  <option value="">-- Choose Employee --</option>
-                  {profiles.map(p => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({getProfileDept(p.id)} - {p.role})
-                    </option>
-                  ))}
-                </select>
+                <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5">Allocation Target</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAllocationTarget('employee')}
+                    className={`py-2 px-3 rounded-lg text-xs font-bold border transition-all ${
+                      allocationTarget === 'employee'
+                        ? 'bg-brand-500/10 border-brand-500 text-brand-350 font-extrabold'
+                        : 'bg-slate-950 border-slate-850 text-slate-500 hover:text-slate-300'
+                    }`}
+                  >
+                    Employee
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAllocationTarget('department')}
+                    className={`py-2 px-3 rounded-lg text-xs font-bold border transition-all ${
+                      allocationTarget === 'department'
+                        ? 'bg-brand-500/10 border-brand-500 text-brand-350 font-extrabold'
+                        : 'bg-slate-950 border-slate-850 text-slate-500 hover:text-slate-300'
+                    }`}
+                  >
+                    Department
+                  </button>
+                </div>
               </div>
+
+              {/* Dynamic Assignee Select */}
+              {allocationTarget === 'employee' ? (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5">Assignee Employee</label>
+                  <select
+                    value={selectedProfileId}
+                    onChange={(e) => setSelectedProfileId(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-brand-500"
+                  >
+                    <option value="">-- Choose Employee --</option>
+                    {profiles.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} ({getProfileDept(p.id)} - {p.role})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5">Assignee Department</label>
+                  <select
+                    value={selectedDepartmentId}
+                    onChange={(e) => setSelectedDepartmentId(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-brand-500"
+                  >
+                    <option value="">-- Choose Department --</option>
+                    {departments.map(d => (
+                      <option key={d.id} value={d.id}>
+                        {d.name} ({d.status})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* Expected Return Date (Only shown if normal allocation) */}
               {!activeAllocation && (
