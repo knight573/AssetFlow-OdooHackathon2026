@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -34,7 +36,7 @@
 
     --ring: 243.4 75% 59%;
 
-    --radius: 6px;
+    --radius: 12px;
   }
 
   /* Dark theme (grayscale base with high-contrast accent) */
@@ -68,33 +70,28 @@
 
     --ring: 243.4 75% 59%;
 
-    --radius: 6px;
+    --radius: 12px;
   }
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* Force strict 6px border radius on all components across the application */
-.rounded-xl, 
-.rounded-2xl, 
-.rounded-3xl, 
-.rounded-lg, 
-.rounded-md, 
-.rounded-sm, 
-.rounded-2xl, 
-.rounded-3xl,
-[class*="rounded-"] {
-  border-radius: 6px !important;
-}
+/* Standardized premium rounded corners across the app */
+.rounded-sm { border-radius: 4px !important; }
+.rounded-md { border-radius: 8px !important; }
+.rounded-lg { border-radius: 12px !important; }
+.rounded-xl { border-radius: 16px !important; }
+.rounded-2xl { border-radius: 20px !important; }
+.rounded-3xl { border-radius: 24px !important; }
 
 /* Custom Scrollbar Styles for Premium Feel */
 ::-webkit-scrollbar {
@@ -114,13 +111,19 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Glassmorphism panel styling helper classes */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.5) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.05) !important;
 }
 
 .dark .glass-panel {
-  background: rgba(8, 12, 26, 0.4);
+  background: rgba(13, 20, 38, 0.5) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37) !important;
 }
 
 /* Global Light Mode overrides when .dark is NOT present on html */
@@ -243,14 +246,18 @@ html:not(.dark) .text-white {
 }
 
 html:not(.dark) .glass-panel {
-  background: rgba(255, 255, 255, 0.8) !important;
-  border-color: #cbd5e1 !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+  background: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.04) !important;
 }
 
 html:not(.dark) .glass {
-  background: rgba(255, 255, 255, 0.7) !important;
-  border-color: #cbd5e1 !important;
+  background: rgba(255, 255, 255, 0.65) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
 }
 
 html:not(.dark) ::-webkit-scrollbar-thumb {
@@ -467,21 +474,108 @@ html:not(.dark) .border-slate-800\/80 {
   border-color: #cbd5e1 !important;
 }
 
+/* Glowing Radial backgrounds for body wrapper to look premium and lively */
+.bg-\[\#050811\] {
+  background-color: #03050c !important;
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.12) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(236, 72, 153, 0.04) 0%, transparent 60%) !important;
+  background-attachment: fixed !important;
+}
+
+html:not(.dark) .bg-\[\#050811\] {
+  background-color: #f8fafc !important;
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.04) 0%, transparent 40%) !important;
+  background-attachment: fixed !important;
+}
+
+/* Glass card and panel container backdrops */
+.bg-slate-950\/45, 
+.bg-slate-950\/40, 
+.bg-slate-950\/20,
+.bg-slate-900\/60,
+.bg-slate-900\/40 {
+  backdrop-filter: blur(12px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
+}
+
+.dark .bg-slate-950\/45, 
+.dark .bg-slate-950\/40, 
+.dark .bg-slate-950\/20 {
+  background: rgba(13, 20, 38, 0.45) !important;
+  border: 1px solid rgba(255, 255, 255, 0.07) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+}
+
+html:not(.dark) .bg-slate-950\/45,
+html:not(.dark) .bg-slate-950\/40,
+html:not(.dark) .bg-slate-950\/20 {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02) !important;
+}
+
+/* Translucent Glass Form Controls */
+input, select, textarea {
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  background: rgba(13, 20, 38, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  transition: all 0.2s ease-in-out !important;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: rgba(99, 102, 241, 0.5) !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25), inset 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  background: rgba(13, 20, 38, 0.8) !important;
+}
+
+html:not(.dark) input, html:not(.dark) select, html:not(.dark) textarea {
+  background-color: rgba(255, 255, 255, 0.7) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+  color: #0f172a !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03) !important;
+}
+html:not(.dark) input:focus, html:not(.dark) select:focus, html:not(.dark) textarea:focus {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(99, 102, 241, 0.5) !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15), inset 0 2px 4px rgba(0, 0, 0, 0.03) !important;
+}
+
 /* Premium globally polished button animations & hover scaling responses */
 button, 
 .btn-transition {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 button:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.05);
+  transform: translateY(-1.5px);
+  filter: brightness(1.08);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.18) !important;
 }
 
 button:active {
-  transform: translateY(0) scale(0.97);
+  transform: translateY(0.5px) scale(0.97);
 }
 
 html:not(.dark) button:hover {
   filter: brightness(0.96) contrast(1.05);
+}
+
+/* Glowing Glass Buttons for CTA / Accent Actions */
+button.bg-gradient-to-r, 
+button.bg-indigo-600 {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35) !important;
+  backdrop-filter: blur(8px) !important;
+}
+button.bg-gradient-to-r:hover,
+button.bg-indigo-600:hover {
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5), 0 0 12px rgba(139, 92, 246, 0.4) !important;
+  filter: brightness(1.1) !important;
 }
