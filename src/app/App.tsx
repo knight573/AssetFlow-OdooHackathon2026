@@ -385,7 +385,7 @@ export const App: React.FC = () => {
               </div>
 
               {/* KPI Grid */}
-              <div className="grid grid-cols-2 lg:grid-cols-6 gap-4 md:gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 md:gap-6">
                 <div className="glass-panel rounded-2xl p-5 border border-slate-900 flex flex-col justify-between h-[120px]">
                   <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Assets Available</span>
                   <div className="flex items-baseline gap-2 mt-2">
@@ -427,6 +427,15 @@ export const App: React.FC = () => {
                   <div className="flex items-baseline gap-2 mt-2">
                     <span className="text-3xl md:text-4xl font-extrabold text-violet-400">
                       {transfers.filter(t => t.status === 'pending').length}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="glass-panel rounded-2xl p-5 border border-slate-[#e11d48]/20 bg-[#f43f5e]/5 flex flex-col justify-between h-[120px]">
+                  <span className="text-xs font-bold text-rose-400 uppercase tracking-wider">Overdue Returns</span>
+                  <div className="flex items-baseline gap-2 mt-2">
+                    <span className="text-3xl md:text-4xl font-extrabold text-rose-500">
+                      {overdueCount}
                     </span>
                   </div>
                 </div>

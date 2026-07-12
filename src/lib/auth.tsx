@@ -99,7 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .select('*')
         .eq('id', uid)
         .single();
-      
+
       if (error) throw error;
       if (data) {
         setProfile(data as Profile);
@@ -131,7 +131,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
         throw new Error("No profile found with this email. Please sign up first.");
       }
-      
+
       const storedPassword = found.password || (found.role === 'admin' ? 'admin123' : 'employee123');
       if (password && password !== storedPassword) {
         setLoading(false);
