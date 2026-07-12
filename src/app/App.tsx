@@ -17,12 +17,25 @@ import { ClipboardCheck, TrendingUp, History, Terminal, Landmark } from 'lucide-
 import { 
   LayoutDashboard, Wrench, CalendarDays, ShieldCheck, 
   FolderLock, Bell, LogOut, ChevronRight, Sparkles, User, Settings,
-  Boxes, Layers
+  Boxes, Layers, Sun, Moon
 } from 'lucide-react';
 
 export const App: React.FC = () => {
   const { profile, role, switchProfile, allProfiles, logout, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'directory' | 'allocations' | 'booking' | 'maintenance' | 'audits' | 'reports' | 'logs' | 'notifications' | 'org'>('booking');
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem('theme') as 'light' | 'dark') || 'dark';
+  });
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
   const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -306,6 +319,15 @@ export const App: React.FC = () => {
 
           {/* Action alerts panel (Bell / Notifications) */}
           <div className="flex items-center gap-4 relative">
+            {/* Theme Toggle Button */}
+            <button
+              onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
+              className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-900 transition-all cursor-pointer"
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {theme === 'dark' ? <Sun className="w-5 h-5 text-amber-400" /> : <Moon className="w-5 h-5 text-indigo-400" />}
+            </button>
+
             <button
               onClick={() => setShowNotifications(!showNotifications)}
               className="relative p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-900 transition-all cursor-pointer"
