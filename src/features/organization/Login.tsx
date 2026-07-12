@@ -1,20 +1,37 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../lib/auth';
-import { getMockData } from '../../lib/mockDb';
-import { Profile } from '../../lib/types';
-import { Boxes, Mail, UserPlus, LogIn, Sparkles, CheckCircle2, Lock, HelpCircle, Shield, User, Info } from 'lucide-react';
+import { getMockData, setMockData } from '../../lib/mockDb';
+import { Profile, Department, UserRole } from '../../lib/types';
+import { Boxes, Mail, UserPlus, LogIn, Sparkles, CheckCircle2, Lock, HelpCircle, Shield, User, Info, Settings, Plus, ToggleLeft, ToggleRight, UserCheck, ArrowRight } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { login, signup } = useAuth();
   
-  // View mode: signin, signup, forgot, or forgot_email
-  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot' | 'forgot_email'>('signin');
+  // View mode: signin, signup, forgot, forgot_email, or admin_console
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot' | 'forgot_email' | 'admin_console'>('signin');
   
-  // Form values
+  // Form values - authentication
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   
+  // Admin credentials verification for console access
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [currentAdminProfile, setCurrentAdminProfile] = useState<Profile | null>(null);
+
+  // Form values - Create Employee
+  const [empName, setEmpName] = useState('');
+  const [empEmail, setEmpEmail] = useState('');
+  const [empDept, setEmpDept] = useState('');
+  const [empRole, setEmpRole] = useState<UserRole>('employee');
+  const [empPassword, setEmpPassword] = useState('employee123');
+
+  // Directory lists
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+
   // Recovery outputs
   const [recoveredEmail, setRecoveredEmail] = useState<string | null>(null);
   const [recoveryPassword, setRecoveryPassword] = useState<string | null>(null);
@@ -23,6 +40,110 @@ export const Login: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  const loadDirectoryData = () => {
+    setProfiles(getMockData<Profile>('profiles'));
+    setDepartments(getMockData<Department>('departments'));
+  };
+
+  useEffect(() => {
+    if (isAdminAuthenticated) {
+      loadDirectoryData();
+    }
+  }, [isAdminAuthenticated]);
+
+  const handleAdminVerify = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    const list = getMockData<Profile>('profiles');
+    const found = list.find(p => p.email.toLowerCase() === adminEmail.trim().toLowerCase());
+    
+    if (!found) {
+      setErrorMsg('No profile found with this email.');
+      return;
+    }
+    if (found.role !== 'admin') {
+      setErrorMsg('Access denied: You must be an administrator to open this console.');
+      return;
+    }
+    if (adminPassword !== found.password) {
+      setErrorMsg('Incorrect password. Please try again.');
+      return;
+    }
+
+    setIsAdminAuthenticated(true);
+    setCurrentAdminProfile(found);
+    setSuccessMsg(`Welcome, ${found.name}! Admin Directory Console unlocked.`);
+  };
+
+  const handleCreateEmployee = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    if (!empName.trim() || !empEmail.trim()) {
+      setErrorMsg('Please fill in Name and Email.');
+      return;
+    }
+
+    const list = getMockData<Profile>('profiles');
+    if (list.some(p => p.email.toLowerCase() === empEmail.trim().toLowerCase())) {
+      setErrorMsg('An employee with this email already exists.');
+      return;
+    }
+
+    const newProfile: Profile = {
+      id: crypto.randomUUID(),
+      name: empName.trim(),
+      email: empEmail.trim(),
+      department_id: empDept || null,
+      role: empRole,
+      status: 'active',
+      created_at: new Date().toISOString(),
+      password: empPassword
+    };
+
+    list.push(newProfile);
+    setMockData('profiles', list);
+    setEmpName('');
+    setEmpEmail('');
+    setEmpDept('');
+    setEmpRole('employee');
+    setEmpPassword('employee123');
+    setSuccessMsg(`Employee account created successfully for ${newProfile.name}!`);
+    loadDirectoryData();
+  };
+
+  const handleRoleChange = (profileId: string, nextRole: UserRole) => {
+    const list = getMockData<Profile>('profiles');
+    const updated = list.map(p => p.id === profileId ? { ...p, role: nextRole } : p);
+    setMockData('profiles', updated);
+    setSuccessMsg('Employee role updated successfully!');
+    loadDirectoryData();
+  };
+
+  const handleToggleEmployeeStatus = (profileId: string, currentStatus: 'active' | 'inactive') => {
+    const nextStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    const list = getMockData<Profile>('profiles');
+    const updated = list.map(p => p.id === profileId ? { ...p, status: nextStatus } : p);
+    setMockData('profiles', updated);
+    setSuccessMsg(`Employee status updated to ${nextStatus}!`);
+    loadDirectoryData();
+  };
+
+  const handleProceedToDashboard = async () => {
+    if (!currentAdminProfile) return;
+    setLoading(true);
+    try {
+      await login(currentAdminProfile.email, currentAdminProfile.password);
+    } catch (err: any) {
+      setErrorMsg(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,14 +195,14 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-screen flex items-center justify-center bg-[#050811] relative overflow-hidden font-sans">
+    <div className="min-h-screen w-screen flex items-center justify-center bg-[#050811] relative overflow-hidden font-sans py-12">
       
       {/* Background ambient lighting effects */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-650/10 rounded-full blur-3xl" />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-violet-650/10 rounded-full blur-3xl" />
 
       {/* Auth Card Container */}
-      <div className="w-full max-w-md p-8 glass-panel border border-slate-900 rounded-3xl shadow-2xl relative z-10 space-y-6 mx-4 animate-fade-in">
+      <div className={`w-full ${mode === 'admin_console' && isAdminAuthenticated ? 'max-w-5xl' : 'max-w-md'} p-8 glass-panel border border-slate-900 rounded-3xl shadow-2xl relative z-10 space-y-6 mx-4 transition-all duration-300 animate-fade-in`}>
         
         {/* Brand Header */}
         <div className="flex flex-col items-center text-center space-y-3">
@@ -121,119 +242,329 @@ export const Login: React.FC = () => {
           </div>
         )}
 
-        {/* Form elements */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {(mode === 'signup' || mode === 'forgot_email') && (
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase">Full Name</label>
-              <div className="relative">
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. John Doe"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full p-3 pl-4 rounded-xl bg-slate-950/60 border border-slate-850 focus:border-indigo-500 text-xs font-semibold text-slate-200 outline-none transition"
-                />
+        {/* VIEW 1: ADMIN DIRECTORY CONSOLE (AUTHENTICATED) */}
+        {mode === 'admin_console' && isAdminAuthenticated && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-4 animate-fade-in">
+            
+            {/* Create form panel */}
+            <div className="lg:col-span-1 glass-panel border border-slate-900/60 rounded-2xl p-5 space-y-4">
+              <h3 className="font-bold text-sm text-white flex items-center gap-2">
+                <Plus className="w-4 h-4 text-indigo-400" />
+                Add Employee
+              </h3>
+              
+              <form onSubmit={handleCreateEmployee} className="space-y-3.5">
+                <div>
+                  <label className="text-[9px] font-bold text-slate-500 uppercase">Full Name</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Amit Kumar"
+                    value={empName}
+                    onChange={(e) => setEmpName(e.target.value)}
+                    className="w-full mt-1 p-2.5 rounded-xl bg-slate-950/40 border border-slate-850 text-xs text-slate-200 outline-none"
+                  />
+                </div>
+                
+                <div>
+                  <label className="text-[9px] font-bold text-slate-500 uppercase">Corporate Email</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="e.g. amit@company.com"
+                    value={empEmail}
+                    onChange={(e) => setEmpEmail(e.target.value)}
+                    className="w-full mt-1 p-2.5 rounded-xl bg-slate-950/40 border border-slate-850 text-xs text-slate-200 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-bold text-slate-500 uppercase">Department</label>
+                  <select
+                    value={empDept}
+                    onChange={(e) => setEmpDept(e.target.value)}
+                    className="w-full mt-1 p-2.5 rounded-xl bg-slate-950/40 border border-slate-850 text-xs text-slate-200 outline-none font-medium"
+                  >
+                    <option value="" className="bg-slate-950">None (Top-Level)</option>
+                    {departments.map(d => (
+                      <option key={d.id} value={d.id} className="bg-slate-950">{d.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-bold text-slate-500 uppercase">Security Role</label>
+                  <select
+                    value={empRole}
+                    onChange={(e) => setEmpRole(e.target.value as UserRole)}
+                    className="w-full mt-1 p-2.5 rounded-xl bg-slate-950/40 border border-slate-850 text-xs text-slate-200 outline-none font-medium"
+                  >
+                    <option value="employee" className="bg-slate-950">Employee</option>
+                    <option value="department_head" className="bg-slate-950">Department Head</option>
+                    <option value="asset_manager" className="bg-slate-950">Asset Manager</option>
+                    <option value="admin" className="bg-slate-950">Admin</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[9px] font-bold text-slate-500 uppercase">Initial Password</label>
+                  <input
+                    type="password"
+                    required
+                    value={empPassword}
+                    onChange={(e) => setEmpPassword(e.target.value)}
+                    className="w-full mt-1 p-2.5 rounded-xl bg-slate-950/40 border border-slate-850 text-xs text-slate-200 outline-none"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-2.5 bg-indigo-650 hover:bg-indigo-600 rounded-xl font-bold text-xs text-white shadow-md transition cursor-pointer"
+                >
+                  Create Account
+                </button>
+              </form>
+
+              <div className="pt-2 border-t border-slate-900 flex flex-col gap-2">
+                <button
+                  onClick={handleProceedToDashboard}
+                  disabled={loading}
+                  className="w-full py-2.5 bg-emerald-650 hover:bg-emerald-600 rounded-xl font-bold text-xs text-white shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-40"
+                >
+                  Proceed to Dashboard
+                  <ArrowRight className="w-4 h-4" />
+                </button>
               </div>
             </div>
-          )}
 
-          {mode !== 'forgot_email' && (
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase">Corporate Email</label>
-              <div className="relative">
-                <input
-                  type="email"
-                  required
-                  placeholder="e.g. employee@company.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full p-3 pl-4 rounded-xl bg-slate-950/60 border border-slate-850 focus:border-indigo-500 text-xs font-semibold text-slate-200 outline-none transition"
-                />
-              </div>
+            {/* List panel */}
+            <div className="lg:col-span-2 glass-panel border border-slate-900/60 rounded-2xl overflow-hidden h-fit">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-900 bg-slate-950/20 text-slate-400 font-bold uppercase text-[9px] tracking-wider">
+                    <th className="p-3.5">Name</th>
+                    <th className="p-3.5">Email</th>
+                    <th className="p-3.5">Department</th>
+                    <th className="p-3.5">Role</th>
+                    <th className="p-3.5">Status</th>
+                    <th className="p-3.5 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-900/40">
+                  {profiles.map(emp => {
+                    const dep = departments.find(d => d.id === emp.department_id);
+                    const isOtherAdmin = emp.role === 'admin' && emp.id !== currentAdminProfile?.id;
+                    
+                    return (
+                      <tr key={emp.id} className="hover:bg-slate-900/5 transition-colors">
+                        <td className="p-3.5 font-bold text-white text-xs">{emp.name}</td>
+                        <td className="p-3.5 text-slate-350">{emp.email}</td>
+                        <td className="p-3.5 text-slate-400">{dep ? dep.name : <span className="italic text-slate-600 text-[10px]">Unassigned</span>}</td>
+                        <td className="p-3.5">
+                          <select
+                            value={emp.role}
+                            disabled={isOtherAdmin}
+                            onChange={(e) => handleRoleChange(emp.id, e.target.value as UserRole)}
+                            className="bg-slate-950 border border-slate-850 rounded-lg p-1 text-[11px] text-slate-300 font-medium outline-none focus:border-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                          >
+                            <option value="employee">Employee</option>
+                            <option value="department_head">Dept Head</option>
+                            <option value="asset_manager">Asset Mgr</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        </td>
+                        <td className="p-3.5">
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase ${
+                            emp.status === 'active' 
+                              ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                              : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                          }`}>
+                            {emp.status}
+                          </span>
+                        </td>
+                        <td className="p-3.5 text-right">
+                          <button
+                            onClick={() => handleToggleEmployeeStatus(emp.id, emp.status)}
+                            disabled={isOtherAdmin}
+                            className="p-1 hover:bg-slate-850 border border-slate-900 rounded-lg text-slate-400 hover:text-white transition disabled:opacity-40 disabled:cursor-not-allowed"
+                            title="Toggle Status"
+                          >
+                            {emp.status === 'active' ? (
+                              <UserCheck className="w-4 h-4 text-emerald-400" />
+                            ) : (
+                              <UserCheck className="w-4 h-4 text-slate-650" />
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-          )}
 
-          {mode !== 'forgot' && mode !== 'forgot_email' && (
-            <div className="space-y-1">
-              <div className="flex justify-between items-center">
-                <label className="text-[10px] font-bold text-slate-500 uppercase">Password</label>
-                {mode === 'signin' && (
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMode('forgot_email');
-                        setErrorMsg(null);
-                        setSuccessMsg(null);
-                        setRecoveredEmail(null);
-                        setRecoveryPassword(null);
-                        setName('');
-                      }}
-                      className="text-[10px] text-indigo-400 hover:underline font-bold"
-                    >
-                      Forgot Email ID?
-                    </button>
-                    <span className="text-[10px] text-slate-600">|</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMode('forgot');
-                        setErrorMsg(null);
-                        setSuccessMsg(null);
-                        setRecoveredEmail(null);
-                        setRecoveryPassword(null);
-                        setEmail('');
-                      }}
-                      className="text-[10px] text-indigo-400 hover:underline font-bold"
-                    >
-                      Forgot Password?
-                    </button>
-                  </div>
-                )}
-              </div>
-              <div className="relative">
-                <input
-                  type="password"
-                  required
-                  placeholder="Enter password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full p-3 pl-4 rounded-xl bg-slate-950/60 border border-slate-850 focus:border-indigo-500 text-xs font-semibold text-slate-200 outline-none transition"
-                />
-              </div>
+          </div>
+        )}
+
+        {/* VIEW 2: ADMIN DIRECTORY CONSOLE (SIGN IN PROMPT) */}
+        {mode === 'admin_console' && !isAdminAuthenticated && (
+          <form onSubmit={handleAdminVerify} className="space-y-4 animate-fade-in">
+            <div className="text-center space-y-1">
+              <h3 className="text-sm font-bold text-white flex items-center justify-center gap-1.5">
+                <Shield className="w-4 h-4 text-indigo-400" />
+                Unlock Admin Console
+              </h3>
+              <p className="text-[11px] text-slate-400">Please verify administrative credentials to manage employees.</p>
             </div>
-          )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-indigo-650 hover:bg-indigo-600 rounded-xl font-extrabold text-xs text-white shadow-lg shadow-indigo-650/10 transition cursor-pointer flex items-center justify-center gap-2 disabled:opacity-40"
-          >
-            {mode === 'signin' ? (
-              <>
-                <LogIn className="w-4 h-4" />
-                Sign In
-              </>
-            ) : mode === 'signup' ? (
-              <>
-                <UserPlus className="w-4 h-4" />
-                Register Account
-              </>
-            ) : mode === 'forgot' ? (
-              <>
-                <HelpCircle className="w-4 h-4" />
-                Recover Password
-              </>
-            ) : (
-              <>
-                <Mail className="w-4 h-4" />
-                Recover Email ID
-              </>
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-500 uppercase">Admin Email</label>
+              <input
+                type="email"
+                required
+                placeholder="e.g. aadarsh@company.com"
+                value={adminEmail}
+                onChange={(e) => setAdminEmail(e.target.value)}
+                className="w-full p-3 pl-4 rounded-xl bg-slate-950/60 border border-slate-850 focus:border-indigo-500 text-xs font-semibold text-slate-200 outline-none transition"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold text-slate-500 uppercase">Admin Password</label>
+              <input
+                type="password"
+                required
+                placeholder="Enter password"
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+                className="w-full p-3 pl-4 rounded-xl bg-slate-950/60 border border-slate-850 focus:border-indigo-500 text-xs font-semibold text-slate-200 outline-none transition"
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-3 bg-indigo-650 hover:bg-indigo-600 rounded-xl font-extrabold text-xs text-white shadow-lg shadow-indigo-650/10 transition cursor-pointer"
+            >
+              Verify & Open Console
+            </button>
+          </form>
+        )}
+
+        {/* VIEW 3: STANDARD LOGIN / SIGNUP / PASSWORD RECOVERY FORMS */}
+        {mode !== 'admin_console' && (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === 'signup' && (
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Full Name</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. John Doe"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="w-full p-3 pl-4 rounded-xl bg-slate-950/60 border border-slate-850 focus:border-indigo-500 text-xs font-semibold text-slate-200 outline-none transition"
+                  />
+                </div>
+              </div>
             )}
-          </button>
-        </form>
+
+            {mode !== 'forgot_email' && (
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Corporate Email</label>
+                <div className="relative">
+                  <input
+                    type="email"
+                    required
+                    placeholder="e.g. employee@company.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full p-3 pl-4 rounded-xl bg-slate-950/60 border border-slate-850 focus:border-indigo-500 text-xs font-semibold text-slate-200 outline-none transition"
+                  />
+                </div>
+              </div>
+            )}
+
+            {mode !== 'forgot' && mode !== 'forgot_email' && (
+              <div className="space-y-1">
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase">Password</label>
+                  {mode === 'signin' && (
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMode('forgot_email');
+                          setErrorMsg(null);
+                          setSuccessMsg(null);
+                          setRecoveredEmail(null);
+                          setRecoveryPassword(null);
+                          setName('');
+                        }}
+                        className="text-[10px] text-indigo-400 hover:underline font-bold"
+                      >
+                        Forgot Email ID?
+                      </button>
+                      <span className="text-[10px] text-slate-600">|</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMode('forgot');
+                          setErrorMsg(null);
+                          setSuccessMsg(null);
+                          setRecoveredEmail(null);
+                          setRecoveryPassword(null);
+                          setEmail('');
+                        }}
+                        className="text-[10px] text-indigo-400 hover:underline font-bold"
+                      >
+                        Forgot Password?
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <div className="relative">
+                  <input
+                    type="password"
+                    required
+                    placeholder="Enter password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full p-3 pl-4 rounded-xl bg-slate-950/60 border border-slate-850 focus:border-indigo-500 text-xs font-semibold text-slate-200 outline-none transition"
+                  />
+                </div>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 bg-indigo-650 hover:bg-indigo-600 rounded-xl font-extrabold text-xs text-white shadow-lg shadow-indigo-650/10 transition cursor-pointer flex items-center justify-center gap-2 disabled:opacity-40"
+            >
+              {mode === 'signin' ? (
+                <>
+                  <LogIn className="w-4 h-4" />
+                  Sign In
+                </>
+              ) : mode === 'signup' ? (
+                <>
+                  <UserPlus className="w-4 h-4" />
+                  Register Account
+                </>
+              ) : mode === 'forgot' ? (
+                <>
+                  <HelpCircle className="w-4 h-4" />
+                  Recover Password
+                </>
+              ) : (
+                <>
+                  <Mail className="w-4 h-4" />
+                  Recover Email ID
+                </>
+              )}
+            </button>
+          </form>
+        )}
 
         {/* Toggle Mode Switcher link */}
         <div className="text-center pt-2 border-t border-slate-900 flex flex-col gap-2">
@@ -245,6 +576,8 @@ export const Login: React.FC = () => {
                 setSuccessMsg(null);
                 setRecoveredEmail(null);
                 setRecoveryPassword(null);
+                setIsAdminAuthenticated(false);
+                setCurrentAdminProfile(null);
                 setPassword('');
                 setEmail('');
                 setName('');
@@ -256,45 +589,64 @@ export const Login: React.FC = () => {
           )}
 
           {mode === 'signin' && (
-            <p className="text-xs text-slate-400 font-medium">
-              New employee?{' '}
+            <div className="flex flex-col gap-2">
+              <p className="text-xs text-slate-400 font-medium">
+                New employee?{' '}
+                <button
+                  onClick={() => {
+                    setMode('signup');
+                    setErrorMsg(null);
+                    setSuccessMsg(null);
+                    setRecoveredEmail(null);
+                    setRecoveryPassword(null);
+                    setPassword('');
+                    setEmail('');
+                    setName('');
+                  }}
+                  className="text-indigo-400 font-bold hover:underline cursor-pointer"
+                >
+                  Create Account
+                </button>
+              </p>
+              
               <button
+                type="button"
                 onClick={() => {
-                  setMode('signup');
+                  setMode('admin_console');
                   setErrorMsg(null);
                   setSuccessMsg(null);
-                  setRecoveredEmail(null);
-                  setRecoveryPassword(null);
-                  setPassword('');
-                  setEmail('');
-                  setName('');
+                  setAdminEmail('');
+                  setAdminPassword('');
                 }}
-                className="text-indigo-400 font-bold hover:underline cursor-pointer"
+                className="text-xs text-emerald-450 hover:underline font-bold flex items-center justify-center gap-1 cursor-pointer mt-1"
               >
-                Create Account
+                <Settings className="w-3.5 h-3.5" />
+                Admin Directory Console
               </button>
-            </p>
+            </div>
           )}
         </div>
 
         {/* Reference Seed accounts directory helper note */}
-        <div className="p-3 bg-indigo-950/10 border border-indigo-950/30 rounded-xl space-y-1">
-          <div className="flex items-center gap-1.5">
-            <Info className="w-4 h-4 text-indigo-400 shrink-0" />
-            <span className="text-[10px] font-bold text-indigo-350 uppercase">Preseeded Team Accounts</span>
+        {mode !== 'admin_console' && (
+          <div className="p-3 bg-indigo-950/10 border border-indigo-950/30 rounded-xl space-y-1 animate-fade-in">
+            <div className="flex items-center gap-1.5">
+              <Info className="w-4 h-4 text-indigo-400 shrink-0" />
+              <span className="text-[10px] font-bold text-indigo-350 uppercase">Preseeded Team Accounts</span>
+            </div>
+            <div className="text-[9px] text-slate-400 leading-normal space-y-0.5 max-h-40 overflow-y-auto">
+              <p>1. <strong>Aadarsh Nath</strong> (Admin) — <code>aadarsh@company.com</code> | <code>admin123</code></p>
+              <p>2. <strong>Yash Raj</strong> (Admin) — <code>yash@company.com</code> | <code>admin123</code></p>
+              <p>3. <strong>Fahad Hassan</strong> (Admin) — <code>fahad@company.com</code> | <code>admin123</code></p>
+              <p>4. <strong>Mrinal Kishor</strong> (Admin) — <code>mrinal@company.com</code> | <code>admin123</code></p>
+              <p>5. <strong>Sarah Jenkins</strong> (Asset Mgr) — <code>sarah@company.com</code> | <code>employee123</code></p>
+              <p>6. <strong>Amit Kumar</strong> (Dept Head) — <code>amit@company.com</code> | <code>employee123</code></p>
+              <p>7. <strong>Neha Sharma</strong> (Employee) — <code>neha@company.com</code> | <code>employee123</code></p>
+              <p>8. <strong>Rahul Verma</strong> (Employee) — <code>rahul@company.com</code> | <code>employee123</code></p>
+              <p>9. <strong>Deepa Patel</strong> (Employee) — <code>deepa@company.com</code> | <code>employee123</code></p>
+            </div>
           </div>
-          <div className="text-[9px] text-slate-400 leading-normal space-y-0.5 max-h-40 overflow-y-auto">
-            <p>1. <strong>Aadarsh Nath</strong> (Admin) — <code>aadarsh@company.com</code> | <code>admin123</code></p>
-            <p>2. <strong>Yash Raj</strong> (Admin) — <code>yash@company.com</code> | <code>admin123</code></p>
-            <p>3. <strong>Fahad Hassan</strong> (Admin) — <code>fahad@company.com</code> | <code>admin123</code></p>
-            <p>4. <strong>Mrinal Kishor</strong> (Admin) — <code>mrinal@company.com</code> | <code>admin123</code></p>
-            <p>5. <strong>Sarah Jenkins</strong> (Asset Mgr) — <code>sarah@company.com</code> | <code>employee123</code></p>
-            <p>6. <strong>Amit Kumar</strong> (Dept Head) — <code>amit@company.com</code> | <code>employee123</code></p>
-            <p>7. <strong>Neha Sharma</strong> (Employee) — <code>neha@company.com</code> | <code>employee123</code></p>
-            <p>8. <strong>Rahul Verma</strong> (Employee) — <code>rahul@company.com</code> | <code>employee123</code></p>
-            <p>9. <strong>Deepa Patel</strong> (Employee) — <code>deepa@company.com</code> | <code>employee123</code></p>
-          </div>
-        </div>
+        )}
 
       </div>
     </div>
