@@ -58,6 +58,20 @@ export const Login: React.FC = () => {
     }
   }, [isAdminAuthenticated]);
 
+  // Trigger FormSubmit submission through hidden iframe once OTP is generated
+  useEffect(() => {
+    if (generatedOtp && email && mode === 'forgot' && !otpSent) {
+      const form = document.getElementById('otp-email-form') as HTMLFormElement;
+      if (form) {
+        console.log(`[AssetFlow OTP Debug] Generated code for ${email}: ${generatedOtp}`);
+        form.submit();
+        setOtpSent(true);
+        setSuccessMsg(`OTP request has been dispatched to: ${email}. If this is your first time using this service, please check your email (and Spam folder) for a "FormSubmit Activation" confirmation email and click it to authorize delivery!`);
+        setLoading(false);
+      }
+    }
+  }, [generatedOtp, email, mode]);
+
   const handleAdminVerify = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
@@ -151,8 +165,8 @@ export const Login: React.FC = () => {
     }
   };
 
-  // OTP Send Trigger (Real email delivery)
-  const handleSendOtp = async (e: React.FormEvent) => {
+  // OTP Send Trigger (Generates OTP, effect will submit the form)
+  const handleSendOtp = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     setSuccessMsg(null);
@@ -168,35 +182,6 @@ export const Login: React.FC = () => {
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setGeneratedOtp(code);
-
-    try {
-      // Dispatches email securely via keyless FormSubmit relay endpoint
-      const response = await fetch(`https://formsubmit.co/ajax/${email.trim()}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify({
-          _subject: "AssetFlow Portal - OTP Reset Request Verification",
-          message: `Hello,\n\nA password reset request was triggered on the AssetFlow ERP system.\n\nYour secure 6-digit OTP code is: ${code}\n\nIf you did not initiate this request, please change your credentials immediately.\n\nRegards,\nAssetFlow Security Team`,
-          _honey: ""
-        })
-      });
-
-      const res = await response.json();
-      if (res.success === "false") {
-        throw new Error(res.message || "Failed to relay reset email.");
-      }
-
-      setOtpSent(true);
-      setSuccessMsg(`Secure OTP email dispatched successfully. Check your inbox: ${email}`);
-    } catch (err: any) {
-      console.error(err);
-      setErrorMsg('Email delivery failed. Checking network state. Please verify the email ID or try again.');
-    } finally {
-      setLoading(false);
-    }
   };
 
   // OTP Reset submit
@@ -271,6 +256,24 @@ export const Login: React.FC = () => {
   return (
     <div className="min-h-screen w-screen flex items-center justify-center bg-[#050811] relative overflow-hidden font-sans py-12">
       
+      {/* Hidden HTML Form targeting a hidden Iframe to execute CORS-free email relay */}
+      {generatedOtp && email && (
+        <>
+          <form
+            id="otp-email-form"
+            action={`https://formsubmit.co/${email.trim()}`}
+            method="POST"
+            target="otp-relay-iframe"
+            style={{ display: 'none' }}
+          >
+            <input type="hidden" name="_subject" value="AssetFlow Portal - OTP Reset Request Verification" />
+            <input type="hidden" name="message" value={`Hello,\n\nA password reset request was triggered on the AssetFlow ERP system.\n\nYour secure 6-digit OTP code is: ${generatedOtp}\n\nIf you did not initiate this request, please ignore this email.\n\nRegards,\nAssetFlow Security Team`} />
+            <input type="hidden" name="_captcha" value="false" />
+          </form>
+          <iframe id="otp-relay-iframe" name="otp-relay-iframe" style={{ display: 'none' }}></iframe>
+        </>
+      )}
+
       {/* Background ambient lighting effects */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-650/10 rounded-full blur-3xl" />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-violet-650/10 rounded-full blur-3xl" />
@@ -545,9 +548,9 @@ export const Login: React.FC = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 bg-indigo-650 hover:bg-indigo-600 rounded-xl font-extrabold text-xs text-white shadow-lg transition cursor-pointer disabled:opacity-40"
+                  className="w-full py-3 bg-indigo-650 hover:bg-indigo-600 rounded-xl font-extrabold text-xs text-white shadow-lg transition cursor-pointer disabled:opacity-40 animate-pulse"
                 >
-                  {loading ? 'Relaying OTP Email...' : 'Send OTP Code'}
+                  {loading ? 'Dispatched. Waiting...' : 'Send OTP Code'}
                 </button>
               </form>
             ) : (
