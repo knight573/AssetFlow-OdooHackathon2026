@@ -225,6 +225,22 @@ export const Login: React.FC = () => {
     setSuccessMsg('Your password has been reset successfully! Please sign in using your new password.');
   };
 
+  const handleQuickLogin = async (roleEmail: string, rolePass: string) => {
+    setEmail(roleEmail);
+    setPassword(rolePass);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    setLoading(true);
+    try {
+      await login(roleEmail, rolePass);
+      setSuccessMsg('Logged in successfully via Quick-Fill!');
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Quick login failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
@@ -717,6 +733,49 @@ export const Login: React.FC = () => {
               )}
             </button>
           </form>
+        )}
+
+        {/* Demo Credentials Quick-Fill Bar */}
+        {mode === 'signin' && (
+          <div className="space-y-2.5 pt-4 border-t border-slate-900">
+            <span className="text-[10px] font-bold text-slate-500 uppercase block tracking-wider text-center">
+              ⚡ Demo Presentation Quick Login
+            </span>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => handleQuickLogin('aadarsh@company.com', 'admin123')}
+                className="py-2 px-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 hover:border-indigo-500/40 rounded-xl text-[10px] font-bold text-indigo-300 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Shield className="w-3 h-3 text-indigo-400" />
+                Admin
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickLogin('sarah@company.com', 'employee123')}
+                className="py-2 px-2.5 bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 hover:border-violet-500/40 rounded-xl text-[10px] font-bold text-violet-300 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Settings className="w-3 h-3 text-violet-400" />
+                Asset Mgr
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickLogin('amit@company.com', 'employee123')}
+                className="py-2 px-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 hover:border-emerald-500/40 rounded-xl text-[10px] font-bold text-emerald-300 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <User className="w-3 h-3 text-emerald-400" />
+                Dept Head
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickLogin('kravi1610@gmail.com', 'employee123')}
+                className="py-2 px-2.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 hover:border-amber-500/40 rounded-xl text-[10px] font-bold text-amber-300 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <User className="w-3 h-3 text-amber-400" />
+                Employee
+              </button>
+            </div>
+          </div>
         )}
 
         {/* Toggle Mode Switcher link */}
