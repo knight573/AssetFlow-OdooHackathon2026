@@ -321,4 +321,10 @@ The local database is seeded with 9 default user accounts representing various o
 
 ### Contributors
 
-Developed and maintained by **Yash Raj**.
+Developed and maintained by:
+- **Yash Raj**
+- **Fahad Hassan**
+- **Aadarsh Nath**
+- **Mrinal Kishor**
+
+> "Innovation is the calling card of the future, and collaboration is the key that unlocks it." — Unknown
