@@ -3,7 +3,42 @@
 @tailwind utilities;
 
 @layer base {
+  /* Light theme (default) */
   :root {
+    --background: 0 0% 100%;
+    --foreground: 222 47% 11%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 40%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+
+    --primary: 263.4 70% 50.4%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --accent: 210 40% 94%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+
+    --ring: 263.4 70% 50.4%;
+
+    --radius: 0.75rem;
+  }
+
+  /* Dark theme (original AssetFlow design, opt-in via .dark on <html>) */
+  .dark {
     --background: 224 71% 4%;
     --foreground: 213 31% 91%;
 
@@ -39,7 +74,8 @@
 
 body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: #050811;
+  background-color: hsl(var(--background));
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -64,13 +100,11 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Glassmorphism panel styling helper classes */
 .glass-panel {
-  background: rgba(8, 12, 26, 0.4);
+  background: rgba(255, 255, 255, 0.6);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
-.my-component {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
+.dark .glass-panel {
+  background: rgba(8, 12, 26, 0.4);
 }
