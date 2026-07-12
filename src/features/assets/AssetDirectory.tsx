@@ -443,33 +443,33 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
       {/* Title Panel */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-extrabold text-white tracking-tight">Asset Registry</h2>
+          <h2 className="text-2xl font-bold text-white tracking-tight">Asset Registry</h2>
           <p className="text-sm text-slate-400 mt-1">Register enterprise hardware, search tags, track active lifecycles, and view logs.</p>
         </div>
 
         {isAssetManagerOrAdmin && (
           <button
             onClick={() => setShowRegisterPanel(true)}
-            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-500 active:bg-brand-700 text-white text-sm font-semibold rounded-xl transition-all shadow-lg shadow-brand-600/15"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 active:bg-brand-700 text-white text-sm font-semibold rounded-lg transition-all shadow-sm"
           >
-            <Plus className="h-5 w-5" />
+            <Plus className="h-4 w-4" />
             Register New Asset
           </button>
         )}
       </div>
 
-      {/* KPI Cards Panel */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6">
+      {/* KPI Cards Panel (Strict 8px spacing, 12px card radius, balanced typography) */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
-          { label: 'Total Assets', value: stats.total, color: 'border-slate-800 text-white bg-slate-900/40' },
+          { label: 'Total Assets', value: stats.total, color: 'border-slate-800/80 text-white bg-slate-900/40' },
           { label: 'Available', value: stats.available, color: 'border-emerald-500/20 text-emerald-400 bg-emerald-950/10' },
           { label: 'Allocated', value: stats.allocated, color: 'border-indigo-500/20 text-indigo-400 bg-indigo-950/10' },
           { label: 'Under Repair', value: stats.maintenance, color: 'border-amber-500/20 text-amber-400 bg-amber-950/10' },
           { label: 'Portfolio Value', value: `₹${stats.totalValue.toLocaleString()}`, color: 'border-violet-500/20 text-violet-400 bg-violet-950/10' }
         ].map((c, i) => (
-          <div key={i} className={`p-5 rounded-2xl border glass-card ${c.color} shadow-sm`}>
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{c.label}</p>
-            <p className="text-3xl md:text-4xl font-extrabold mt-2 tracking-tight">{c.value}</p>
+          <div key={i} className={`p-5 rounded-xl border glass-panel ${c.color} hover:border-slate-700 transition-colors`}>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{c.label}</p>
+            <p className="text-2xl font-bold mt-2 tracking-tight">{c.value}</p>
           </div>
         ))}
       </div>

@@ -148,21 +148,21 @@ export const MaintenanceManagement: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-white bg-clip-text bg-gradient-to-r from-indigo-200 to-indigo-400">
+          <h2 className="text-2xl font-bold text-white tracking-tight">
             Maintenance Management
-          </h1>
-          <p className="text-slate-400 mt-1">
+          </h2>
+          <p className="text-sm text-slate-400 mt-1 leading-relaxed">
             Track asset health, approve repair requests, and assign service technicians.
           </p>
         </div>
         <div>
           <button
             onClick={() => setIsNewModalOpen(true)}
-            className="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white px-4 py-2.5 rounded-xl font-medium shadow-lg hover:shadow-indigo-500/25 transition-all"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 active:bg-brand-700 text-white text-sm font-semibold rounded-lg transition-all shadow-sm"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-4 h-4" />
             Raise Maintenance Request
           </button>
         </div>

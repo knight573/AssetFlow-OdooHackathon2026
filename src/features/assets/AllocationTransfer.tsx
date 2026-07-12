@@ -473,8 +473,8 @@ export default function AllocationTransfer({
     <div className="space-y-8 animate-fade-in">
       {/* Header Panel */}
       <div>
-        <h2 className="text-3xl font-extrabold text-white tracking-tight">Allocations & Transfers</h2>
-        <p className="text-sm text-slate-400 mt-1">Assign hardware to employees, process equipment returns, and review ownership transfer approvals.</p>
+        <h2 className="text-2xl font-bold text-white tracking-tight">Allocations & Transfers</h2>
+        <p className="text-sm text-slate-400 mt-1 leading-relaxed">Assign hardware to employees, process equipment returns, and review ownership transfer approvals.</p>
       </div>
 
       {/* Navigation Sub-Tabs */}

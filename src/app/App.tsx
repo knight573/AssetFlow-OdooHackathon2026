@@ -158,13 +158,62 @@ export const App: React.FC = () => {
     }
   };
 
+  const checkOverdueAllocations = (allocationList: Allocation[], assetList: Asset[], currentUserId: string) => {
+    let notificationsAdded = false;
+    const notificationsList = getMockData<Notification>('notifications');
+    const now = new Date();
+
+    allocationList.forEach(al => {
+      const returnDate = al.expected_return_date || al.expected_return_at;
+      if (al.status === 'active' && returnDate && new Date(returnDate) < now) {
+        const assetObj = assetList.find(a => a.id === al.asset_id);
+        const uniqueMsg = `Asset Return Overdue Alert: ${assetObj?.tag} (${assetObj?.name}) was expected by ${new Date(returnDate).toLocaleDateString()}.`;
+        
+        if (!notificationsList.some(n => n.message === uniqueMsg)) {
+          notificationsList.push({
+            id: 'note-od-' + Math.random().toString(36).substring(2, 9),
+            user_id: al.profile_id || al.employee_id || currentUserId,
+            message: uniqueMsg,
+            is_read: false,
+            type: 'overdue_return',
+            created_at: now.toISOString()
+          });
+
+          al.status = 'overdue';
+          notificationsAdded = true;
+
+          const logMsg = `Asset Return Overdue Alert: ${assetObj?.tag} is overdue for return.`;
+          const allLogs = getMockData<ActivityLog>('activity_logs');
+          allLogs.push({
+            id: 'log-od-' + Math.random().toString(36).substring(2, 9),
+            actor_id: 'system',
+            action: 'return_overdue',
+            entity_type: 'allocation',
+            entity_id: al.id,
+            details: { asset_tag: assetObj?.tag, expected_date: returnDate, message: logMsg },
+            created_at: now.toISOString()
+          });
+          setMockData('activity_logs', allLogs);
+        }
+      }
+    });
+
+    if (notificationsAdded) {
+      setMockData('notifications', notificationsList);
+      setMockData('allocations', allocationList);
+      window.dispatchEvent(new CustomEvent('mock-db-change', { detail: { table: 'notifications' } }));
+    }
+  };
+
   useEffect(() => {
     if (profile) {
       const interval = setInterval(() => {
         const bList = getMockData<Booking>('bookings');
         const pList = getMockData<Profile>('profiles');
         const aList = getMockData<Asset>('assets');
+        const allocList = getMockData<Allocation>('allocations');
         checkUpcomingBookingReminders(bList, profile.id, pList, aList);
+        checkOverdueAllocations(allocList, aList, profile.id);
       }, 15000);
       return () => clearInterval(interval);
     }
@@ -494,8 +543,8 @@ export const App: React.FC = () => {
 
             {/* Notifications overlay popover panel */}
             {showNotifications && (
-              <div className="absolute right-0 top-12 w-80 glass-panel rounded-2xl border border-slate-800 shadow-2xl p-4 z-50 max-h-96 overflow-y-auto">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-900 mb-3">
+              <div className="absolute right-0 top-12 w-80 bg-slate-900 border border-slate-800 shadow-2xl rounded-xl p-4 z-[999] max-h-96 overflow-y-auto">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-800 mb-3">
                   <h4 className="font-bold text-xs text-white">Notifications Log ({notifications.filter(n => n.user_id === profile.id && n.type !== 'booking_reminder_1h').length})</h4>
                   <button 
                     onClick={() => {
@@ -504,7 +553,7 @@ export const App: React.FC = () => {
                       setMockData('notifications', filtered);
                       setNotifications(filtered);
                     }}
-                    className="text-[10px] text-slate-500 hover:text-white cursor-pointer"
+                    className="text-[10px] text-slate-450 hover:text-white cursor-pointer"
                   >
                     Clear All
                   </button>
@@ -512,32 +561,32 @@ export const App: React.FC = () => {
                 
                 <div className="space-y-2">
                   {notifications.filter(n => n.user_id === profile.id && n.type !== 'booking_reminder_1h').length === 0 ? (
-                    <p className="text-[11px] text-slate-600 text-center py-4">No recent notification alerts</p>
+                    <p className="text-[11px] text-slate-650 text-center py-4">No recent notification alerts</p>
                   ) : (
                     notifications.filter(n => n.user_id === profile.id && n.type !== 'booking_reminder_1h').map(n => {
                       const isUpcoming = n.type === 'booking_upcoming' || n.type === 'booking_confirmed';
                       const isEmail = n.type === 'mock_email';
                       
                       return (
-                        <div key={n.id} className="p-2.5 bg-slate-950/40 border border-slate-900 rounded-xl text-xs space-y-1">
+                        <div key={n.id} className="p-2.5 bg-slate-950 border border-slate-850 rounded-lg text-xs space-y-1">
                           <div className="flex items-center gap-1.5 mb-1">
                             {isUpcoming && (
-                              <span className="text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                              <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
                                 Upcoming
                               </span>
                             )}
                             {isEmail && (
-                              <span className="text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-teal-500/10 text-teal-400 border border-teal-500/20">
+                              <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded bg-teal-500/10 text-teal-400 border border-teal-500/20">
                                 Email Sent
                               </span>
                             )}
                             {!isUpcoming && !isEmail && (
-                              <span className="text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-450 border border-slate-700/30">
+                              <span className="text-[8px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700/30">
                                 Info
                               </span>
                             )}
                           </div>
-                          <p className="text-slate-350 font-medium leading-relaxed">{n.message}</p>
+                          <p className="text-slate-300 font-medium leading-relaxed">{n.message}</p>
                           <span className="text-[9px] text-slate-500 mt-1 block">
                             {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
@@ -580,72 +629,94 @@ export const App: React.FC = () => {
           {activeTab === 'dashboard' && (
             <div className="space-y-6 animate-fade-in">
               <div className="flex flex-col gap-1">
-                <h1 className="text-3xl font-extrabold text-white">Command Dashboard</h1>
-                <p className="text-slate-400">Organization-wide resource deployment stats.</p>
+                <h1 className="text-2xl font-bold text-white tracking-tight">Command Dashboard</h1>
+                <p className="text-sm text-slate-400 leading-relaxed">Organization-wide resource deployment and operational health.</p>
               </div>
 
-              {/* KPI Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 md:gap-6">
-                <div className="glass-panel rounded-2xl p-5 border border-slate-900 flex flex-col justify-between h-[120px]">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Assets Available</span>
+              {/* Primary Metrics Grid (Strict 8px spacing, 12px card radius, refined typography) */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="glass-panel rounded-xl p-5 border border-slate-800/80 hover:border-slate-700 transition-colors flex flex-col justify-between min-h-[104px]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Available</span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                  </div>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-3xl md:text-4xl font-extrabold text-white">
+                    <span className="text-2xl font-bold text-white tracking-tight">
                       {assets.filter(a => a.status === 'available').length}
                     </span>
+                    <span className="text-xs text-slate-500">units</span>
                   </div>
                 </div>
 
-                <div className="glass-panel rounded-2xl p-5 border border-slate-900 flex flex-col justify-between h-[120px]">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Assets Allocated</span>
+                <div className="glass-panel rounded-xl p-5 border border-slate-800/80 hover:border-slate-700 transition-colors flex flex-col justify-between min-h-[104px]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Allocated</span>
+                    <span className="w-2 h-2 rounded-full bg-indigo-400" />
+                  </div>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-3xl md:text-4xl font-extrabold text-indigo-400">
+                    <span className="text-2xl font-bold text-indigo-400 tracking-tight">
                       {assets.filter(a => a.status === 'allocated').length}
                     </span>
+                    <span className="text-xs text-slate-500">deployed</span>
                   </div>
                 </div>
 
-                <div className="glass-panel rounded-2xl p-5 border border-slate-900 flex flex-col justify-between h-[120px]">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Maintenance Today</span>
+                <div className="glass-panel rounded-xl p-5 border border-slate-800/80 hover:border-slate-700 transition-colors flex flex-col justify-between min-h-[104px]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Maintenance</span>
+                    <span className="w-2 h-2 rounded-full bg-amber-400" />
+                  </div>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-3xl md:text-4xl font-extrabold text-amber-400">
+                    <span className="text-2xl font-bold text-amber-400 tracking-tight">
                       {assets.filter(a => a.status === 'under_maintenance').length}
                     </span>
+                    <span className="text-xs text-slate-500">in repair</span>
                   </div>
                 </div>
 
-                <div className="glass-panel rounded-2xl p-5 border border-slate-900 flex flex-col justify-between h-[120px]">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Active Bookings</span>
+                <div className="glass-panel rounded-xl p-5 border border-slate-800/80 hover:border-slate-700 transition-colors flex flex-col justify-between min-h-[104px]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Bookings</span>
+                    <span className="w-2 h-2 rounded-full bg-cyan-400" />
+                  </div>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-3xl md:text-4xl font-extrabold text-emerald-400">
+                    <span className="text-2xl font-bold text-cyan-400 tracking-tight">
                       {getMockData<Booking>('bookings').filter(b => b.status === 'upcoming').length}
                     </span>
+                    <span className="text-xs text-slate-500">active</span>
                   </div>
                 </div>
+              </div>
 
-                <div className="glass-panel rounded-2xl p-5 border border-slate-900 flex flex-col justify-between h-[120px]">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pending Transfers</span>
+              {/* Secondary Operations Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="glass-panel rounded-xl p-5 border border-slate-800/80 hover:border-slate-700 transition-colors flex flex-col justify-between min-h-[104px]">
+                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pending Transfers</span>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-3xl md:text-4xl font-extrabold text-violet-400">
+                    <span className="text-2xl font-bold text-violet-400 tracking-tight">
                       {transfers.filter(t => t.status === 'pending').length}
                     </span>
+                    <span className="text-xs text-slate-500">awaiting action</span>
                   </div>
                 </div>
 
-                <div className="glass-panel rounded-2xl p-5 border border-slate-[#e11d48]/20 bg-[#f43f5e]/5 flex flex-col justify-between h-[120px]">
-                  <span className="text-xs font-bold text-rose-400 uppercase tracking-wider">Overdue Returns</span>
+                <div className="glass-panel rounded-xl p-5 border border-rose-500/30 bg-rose-500/5 hover:border-rose-500/40 transition-colors flex flex-col justify-between min-h-[104px]">
+                  <span className="text-xs font-semibold text-rose-400 uppercase tracking-wider">Overdue Returns</span>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-3xl md:text-4xl font-extrabold text-rose-500">
+                    <span className="text-2xl font-bold text-rose-500 tracking-tight">
                       {overdueCount}
                     </span>
+                    <span className="text-xs text-rose-400/80">requires follow-up</span>
                   </div>
                 </div>
 
-                <div className="glass-panel rounded-2xl p-5 border border-slate-900 flex flex-col justify-between h-[120px]">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Upcoming Returns</span>
+                <div className="glass-panel rounded-xl p-5 border border-slate-800/80 hover:border-slate-700 transition-colors flex flex-col justify-between min-h-[104px]">
+                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Upcoming Returns</span>
                   <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-3xl md:text-4xl font-extrabold text-sky-400">
+                    <span className="text-2xl font-bold text-sky-400 tracking-tight">
                       {upcomingCount}
                     </span>
+                    <span className="text-xs text-slate-500">scheduled</span>
                   </div>
                 </div>
               </div>

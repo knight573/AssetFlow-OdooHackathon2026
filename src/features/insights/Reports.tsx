@@ -86,7 +86,6 @@ export const Reports: React.FC = () => {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const currentMonthIdx = new Date().getMonth();
     
-    // Get last 6 months list
     const last6Months: { month: string; index: number; count: number }[] = [];
     for (let i = 5; i >= 0; i--) {
       const idx = (currentMonthIdx - i + 12) % 12;
@@ -105,7 +104,87 @@ export const Reports: React.FC = () => {
     return last6Months.map(({ month, count }) => ({ name: month, Requests: count }));
   };
 
-  // 4. DATA PREPARATION: Most-Used vs. Idle Assets
+  // 4. DATA PREPARATION: Maintenance Frequency by Category
+  const getMaintenanceByCategoryData = () => {
+    const counts: Record<string, number> = {};
+    maintenance.forEach(req => {
+      const asset = assets.find(a => a.id === req.asset_id);
+      const catName = asset ? (categories.find(c => c.id === asset.category_id)?.name || 'Other') : 'Other';
+      counts[catName] = (counts[catName] || 0) + 1;
+    });
+    return Object.entries(counts).map(([name, count]) => ({ name, Requests: count }));
+  };
+
+  // 5. DATA PREPARATION: Assets Due for Maintenance or Nearing Retirement
+  const getAssetsAttentionList = () => {
+    return assets.map(a => {
+      const ageYears = a.acquisition_date ? (new Date().getTime() - new Date(a.acquisition_date).getTime()) / (1000 * 3600 * 24 * 365) : 0;
+      const maintCount = maintenance.filter(m => m.asset_id === a.id).length;
+      
+      let reason = '';
+      let priority: 'low' | 'medium' | 'high' = 'low';
+
+      if (a.condition.toLowerCase() === 'poor') {
+        reason = 'Nearing Retirement (Poor Condition)';
+        priority = 'high';
+      } else if (ageYears > 3) {
+        reason = 'Nearing Retirement (Age > 3 yrs)';
+        priority = 'medium';
+      } else if (a.condition.toLowerCase() === 'damaged') {
+        reason = 'Damaged (Urgent Review Required)';
+        priority = 'high';
+      } else if (a.status === 'under_maintenance') {
+        reason = 'Currently Undergoing Maintenance';
+        priority = 'low';
+      } else if (maintCount > 2) {
+        reason = 'Frequent Failure (High Incident Rate)';
+        priority = 'medium';
+      }
+
+      return {
+        ...a,
+        reason,
+        priority,
+        ageYears: Math.round(ageYears * 10) / 10,
+        maintCount
+      };
+    }).filter(a => a.reason !== '').sort((a, b) => {
+      const score = { high: 3, medium: 2, low: 1 };
+      return score[b.priority] - score[a.priority];
+    }).slice(0, 5);
+  };
+
+  // 6. DATA PREPARATION: Resource Booking Heatmap (Peak Windows)
+  const getBookingHeatmapData = () => {
+    const slots = [
+      { name: '08:00 - 10:00', Bookings: 0 },
+      { name: '10:00 - 12:00', Bookings: 0 },
+      { name: '12:00 - 14:00', Bookings: 0 },
+      { name: '14:00 - 16:00', Bookings: 0 },
+      { name: '16:00 - 18:00', Bookings: 0 },
+      { name: '18:00+', Bookings: 0 }
+    ];
+
+    bookings.forEach(b => {
+      if (b.status === 'cancelled') return;
+      try {
+        const date = new Date(b.start_time);
+        const hour = date.getHours();
+        if (hour >= 8 && hour < 10) slots[0].Bookings++;
+        else if (hour >= 10 && hour < 12) slots[1].Bookings++;
+        else if (hour >= 12 && hour < 14) slots[2].Bookings++;
+        else if (hour >= 14 && hour < 16) slots[3].Bookings++;
+        else if (hour >= 16 && hour < 18) slots[4].Bookings++;
+        else slots[5].Bookings++;
+      } catch (e) {
+        // ignore
+      }
+    });
+
+    return slots;
+  };
+
+  // 7. DATA PREPARATION: Most-Used vs. Idle Assets
   const getAssetUsageStats = () => {
     const stats = assets.map(asset => {
       const allocCount = allocations.filter(a => a.asset_id === asset.id).length;
@@ -131,6 +210,7 @@ export const Reports: React.FC = () => {
   };
 
   const { mostUsed, idle } = getAssetUsageStats();
+  const attentionList = getAssetsAttentionList();
 
   const handleExportCSV = () => {
     const data = assets.map(a => ({
@@ -173,29 +253,30 @@ export const Reports: React.FC = () => {
       {/* Header Panel */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800/80 pb-5 print:border-slate-300">
         <div>
-          <h2 className="text-2xl font-extrabold text-slate-100 print:text-slate-900 flex items-center gap-2">
-            <TrendingUp className="h-7 w-7 text-indigo-500 print:text-indigo-600" /> Analytics & Reports
+          <h2 className="text-2xl font-bold text-slate-100 print:text-slate-900 flex items-center gap-2">
+            <TrendingUp className="h-6 w-6 text-indigo-400" /> Analytics & Reports
           </h2>
-          <p className="text-slate-400 print:text-slate-600 text-sm mt-1">
+          <p className="text-slate-400 print:text-slate-600 text-sm mt-1 leading-relaxed">
             Real-time analytics on asset utilization, maintenance requests, status metrics, and idle resources.
           </p>
         </div>
         <div className="flex gap-2.5 print:hidden">
           <button 
             onClick={fetchData}
-            className="p-2 border border-slate-800 hover:border-slate-700 bg-slate-900/60 rounded-xl text-slate-400 hover:text-slate-200 transition"
+            title="Refresh Data"
+            className="p-2.5 border border-slate-800 hover:border-slate-700 bg-slate-900/65 text-slate-400 hover:text-slate-200 rounded-lg transition"
           >
-            <RefreshCw className="h-5 w-5" />
+            <RefreshCw className="h-4 w-4" />
           </button>
           <button 
             onClick={handleExportCSV}
-            className="flex items-center gap-1.5 px-4 py-2 bg-slate-900/60 hover:bg-slate-850/80 border border-slate-800 rounded-xl text-slate-200 font-medium text-xs transition"
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-slate-900 border border-slate-800 text-slate-300 hover:text-white rounded-lg text-xs font-semibold transition"
           >
             <Download className="h-4 w-4" /> Export Registry CSV
           </button>
           <button 
             onClick={handlePrint}
-            className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-slate-100 border border-indigo-500/30 rounded-xl font-medium text-xs transition shadow-lg shadow-indigo-500/10"
+            className="flex items-center gap-1.5 px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-semibold transition shadow-sm"
           >
             <Printer className="h-4 w-4" /> Print PDF Report
           </button>
@@ -210,13 +291,13 @@ export const Reports: React.FC = () => {
           { title: 'Under Repair', value: assets.filter(a => a.status === 'under_maintenance').length, icon: <Settings className="h-5 w-5 text-amber-400" />, desc: 'In maintenance workflow' },
           { title: 'Lost Assets', value: assets.filter(a => a.status === 'lost').length, icon: <AlertCircle className="h-5 w-5 text-red-400" />, desc: 'Flagged missing in audits' }
         ].map((kpi, idx) => (
-          <div key={idx} className="bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 rounded-2xl p-4.5 print:border-slate-350 print:bg-slate-50 flex flex-col justify-between h-[110px]">
+          <div key={idx} className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-4.5 print:border-slate-350 print:bg-slate-50 flex flex-col justify-between h-[110px]">
             <div className="flex justify-between items-center">
-              <span className="text-xs text-slate-400 print:text-slate-600 font-medium">{kpi.title}</span>
+              <span className="text-xs text-slate-400 print:text-slate-600 font-semibold">{kpi.title}</span>
               <div className="p-1.5 bg-slate-950/40 rounded-lg print:border print:border-slate-300">{kpi.icon}</div>
             </div>
             <div>
-              <span className="text-2xl font-black text-slate-100 print:text-slate-900">{kpi.value}</span>
+              <span className="text-2xl font-bold text-slate-100 print:text-slate-900">{kpi.value}</span>
               <span className="text-[10px] text-slate-500 print:text-slate-600 block mt-0.5">{kpi.desc}</span>
             </div>
           </div>
@@ -226,8 +307,8 @@ export const Reports: React.FC = () => {
       {/* Main Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Department Utilization Bar Chart */}
-        <div className="lg:col-span-2 bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 rounded-2xl p-5 space-y-4 print:border-slate-300 print:h-[350px]">
-          <h3 className="text-sm font-extrabold uppercase text-slate-300 print:text-slate-900 tracking-wider flex items-center gap-1.5">
+        <div className="lg:col-span-2 bg-slate-900/60 border border-slate-800/80 rounded-xl p-5 space-y-4 print:border-slate-300 print:h-[350px]">
+          <h3 className="text-xs font-bold uppercase text-slate-400 print:text-slate-900 tracking-wider flex items-center gap-1.5">
             Department Resource Utilization
           </h3>
           <div className="h-[280px] w-full text-xs">
@@ -237,7 +318,7 @@ export const Reports: React.FC = () => {
                 <XAxis dataKey="name" stroke="#64748b" />
                 <YAxis stroke="#64748b" />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '12px' }}
+                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px' }}
                   labelStyle={{ color: '#94a3b8', fontWeight: 'bold' }}
                 />
                 <Legend />
@@ -249,8 +330,8 @@ export const Reports: React.FC = () => {
         </div>
 
         {/* Status Distribution Pie Chart */}
-        <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 rounded-2xl p-5 space-y-4 print:border-slate-300 print:h-[350px]">
-          <h3 className="text-sm font-extrabold uppercase text-slate-300 print:text-slate-900 tracking-wider flex items-center gap-1.5">
+        <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-5 space-y-4 print:border-slate-300 print:h-[350px]">
+          <h3 className="text-xs font-bold uppercase text-slate-400 print:text-slate-900 tracking-wider flex items-center gap-1.5">
             Asset Status Distribution
           </h3>
           <div className="h-[230px] w-full flex items-center justify-center text-xs">
@@ -270,7 +351,7 @@ export const Reports: React.FC = () => {
                   ))}
                 </Pie>
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '12px' }}
+                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px' }}
                   itemStyle={{ color: '#fff' }}
                 />
               </PieChart>
@@ -287,39 +368,100 @@ export const Reports: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Maintenance requests line chart */}
-        <div className="bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 rounded-2xl p-5 space-y-4 print:border-slate-300 print:h-[350px]">
-          <h3 className="text-sm font-extrabold uppercase text-slate-300 print:text-slate-900 tracking-wider">
-            Maintenance Frequency (6-Month Trend)
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Maintenance frequency by Category */}
+        <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-5 space-y-4 print:border-slate-300">
+          <h3 className="text-xs font-bold uppercase text-slate-400 print:text-slate-900 tracking-wider">
+            Maintenance Frequency by Asset Category
+          </h3>
+          <div className="h-[250px] w-full text-xs">
+            {getMaintenanceByCategoryData().length === 0 ? (
+              <div className="flex items-center justify-center h-full text-slate-500 italic">No maintenance history available.</div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={getMaintenanceByCategoryData()}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" className="print:hidden" />
+                  <XAxis dataKey="name" stroke="#64748b" />
+                  <YAxis stroke="#64748b" allowDecimals={false} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px' }}
+                    labelStyle={{ color: '#94a3b8', fontWeight: 'bold' }}
+                  />
+                  <Bar dataKey="Requests" fill="#ec4899" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+
+        {/* Resource Booking Heatmap (Peak usage windows) */}
+        <div className="bg-slate-900/60 border border-slate-800/80 rounded-xl p-5 space-y-4 print:border-slate-300">
+          <h3 className="text-xs font-bold uppercase text-slate-400 print:text-slate-900 tracking-wider">
+            Resource Booking peak usage windows
           </h3>
           <div className="h-[250px] w-full text-xs">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={getMaintenanceFreqData()}>
+              <BarChart data={getBookingHeatmapData()}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" className="print:hidden" />
                 <XAxis dataKey="name" stroke="#64748b" />
                 <YAxis stroke="#64748b" allowDecimals={false} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '12px' }}
+                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px' }}
                   labelStyle={{ color: '#94a3b8', fontWeight: 'bold' }}
                 />
-                <Line type="monotone" dataKey="Requests" stroke="#ec4899" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-              </LineChart>
+                <Bar dataKey="Bookings" fill="#10b981" radius={[4, 4, 0, 0]} />
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Assets Due for Maintenance or Nearing Retirement */}
+        <div className="lg:col-span-1 bg-slate-900/60 border border-slate-800/80 rounded-xl p-5 space-y-4 print:border-slate-300">
+          <h3 className="text-xs font-bold uppercase text-slate-400 print:text-slate-900 tracking-wider">
+            Alerts: Maintenance & Retirement
+          </h3>
+          {attentionList.length === 0 ? (
+            <p className="text-xs text-slate-500 italic">No current attention warnings.</p>
+          ) : (
+            <div className="space-y-3">
+              {attentionList.map(item => (
+                <div key={item.id} className="p-3 bg-slate-950/40 border border-slate-800/50 rounded-lg flex flex-col gap-1 text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold text-slate-200 truncate">{item.name}</span>
+                    <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${
+                      item.priority === 'high' 
+                        ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' 
+                        : item.priority === 'medium'
+                        ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                        : 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
+                    }`}>
+                      {item.priority.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-rose-450 font-medium">{item.reason}</div>
+                  <div className="flex justify-between items-center text-[10px] text-slate-500 font-mono mt-1 pt-1 border-t border-slate-900/60">
+                    <span>Tag: {item.tag}</span>
+                    <span>Incidents: {item.maintCount}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Most-Used & Idle Assets List */}
-        <div className="lg:col-span-2 bg-slate-900/60 backdrop-blur-xl border border-slate-800/80 rounded-2xl p-5 grid grid-cols-1 md:grid-cols-2 gap-6 print:border-slate-300">
+        <div className="lg:col-span-2 bg-slate-900/60 border border-slate-800/80 rounded-xl p-5 grid grid-cols-1 md:grid-cols-2 gap-6 print:border-slate-300">
           {/* Most Used */}
           <div className="space-y-3">
-            <h4 className="text-xs font-black uppercase text-indigo-400 print:text-indigo-700 tracking-wider">Most-Used Assets</h4>
+            <h4 className="text-xs font-bold uppercase text-indigo-400 print:text-indigo-700 tracking-wider">Most-Used Assets</h4>
             {mostUsed.length === 0 ? (
               <p className="text-xs text-slate-500 italic">No usage logged.</p>
             ) : (
               <div className="space-y-2.5">
                 {mostUsed.map(item => (
-                  <div key={item.id} className="p-3 bg-slate-950/40 border border-slate-800/50 rounded-xl flex justify-between items-center text-xs">
+                  <div key={item.id} className="p-3 bg-slate-950/40 border border-slate-800/50 rounded-lg flex justify-between items-center text-xs">
                     <div>
                       <div className="font-bold text-slate-200">{item.name}</div>
                       <div className="text-[10px] text-slate-500 font-mono mt-0.5">{item.tag} · {item.category}</div>
@@ -336,13 +478,13 @@ export const Reports: React.FC = () => {
 
           {/* Idle */}
           <div className="space-y-3">
-            <h4 className="text-xs font-black uppercase text-amber-400 print:text-amber-700 tracking-wider">Unused / Idle Assets</h4>
+            <h4 className="text-xs font-bold uppercase text-amber-400 print:text-amber-700 tracking-wider">Unused / Idle Assets</h4>
             {idle.length === 0 ? (
               <p className="text-xs text-slate-500 italic">All resources are active.</p>
             ) : (
               <div className="space-y-2.5">
                 {idle.map(item => (
-                  <div key={item.id} className="p-3 bg-slate-950/40 border border-slate-800/50 rounded-xl flex justify-between items-center text-xs">
+                  <div key={item.id} className="p-3 bg-slate-950/40 border border-slate-800/50 rounded-lg flex justify-between items-center text-xs">
                     <div>
                       <div className="font-bold text-slate-200">{item.name}</div>
                       <div className="text-[10px] text-slate-500 font-mono mt-0.5">{item.tag} · {item.category}</div>
