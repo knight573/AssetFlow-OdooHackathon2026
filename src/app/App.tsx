@@ -259,7 +259,7 @@ export const App: React.FC = () => {
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 bg-indigo-950/30 border border-indigo-950 px-3 py-1.5 rounded-xl">
                 <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                <label className="text-[11px] font-bold text-indigo-300">DEMO PROFILE SWITCHER:</label>
+                <label className="text-[11px] font-bold text-indigo-300">Admin Access:</label>
                 <select
                   value={profile?.id || ''}
                   onChange={(e) => switchProfile(e.target.value)}
