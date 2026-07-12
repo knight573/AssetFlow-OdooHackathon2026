@@ -290,3 +290,31 @@ Reports, Notifications & Analytics
 - Suitable for organizations of any size
 
 ---
+
+## Local Setup & Test Credentials
+
+To preview and test the AssetFlow system, run the development server locally:
+```bash
+npm run dev
+```
+
+### Preseeded Sandbox Accounts
+
+The local database is seeded with 9 default user accounts representing various organizational roles. The access password has been configured as follows:
+- **Admin Account**: `admin123`
+- **Employee & Manager Accounts**: `employee123`
+
+| Name | Role | Email | Password |
+|------|------|-------|----------|
+| **Aadarsh Nath** | Admin | `aadarsh@company.com` | `admin123` |
+| **Yash Raj** | Asset Manager | `yash@company.com` | `employee123` |
+| **Mrinal Kishor** | Department Head | `mrinal@company.com` | `employee123` |
+| **Fahad Hassan** | Employee | `fahad@company.com` | `employee123` |
+| **Sarah Jenkins** | Employee | `sarah@company.com` | `employee123` |
+| **Amit Kumar** | Employee | `amit@company.com` | `employee123` |
+| **Neha Sharma** | Employee | `neha@company.com` | `employee123` |
+| **Rahul Verma** | Employee | `rahul@company.com` | `employee123` |
+| **Deepa Patel** | Employee | `deepa@company.com` | `employee123` |
+
+
+---

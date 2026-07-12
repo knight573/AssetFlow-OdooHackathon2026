@@ -51,7 +51,7 @@ export const Login: React.FC = () => {
         if (!found) {
           throw new Error('No profile found with this email.');
         }
-        const pwd = found.password || 'password123';
+        const pwd = found.password || (found.role === 'admin' ? 'admin123' : 'employee123');
         setRecoveryPassword(pwd);
         setSuccessMsg(`Recovery successful: Your password is shown below.`);
       } else if (mode === 'forgot_email') {
@@ -284,15 +284,15 @@ export const Login: React.FC = () => {
             <span className="text-[10px] font-bold text-indigo-350 uppercase">Preseeded Team Accounts</span>
           </div>
           <div className="text-[9px] text-slate-400 leading-normal space-y-0.5 max-h-40 overflow-y-auto">
-            <p>1. <strong>Aadarsh Nath</strong> (Admin) — <code>aadarsh@company.com</code></p>
-            <p>2. <strong>Yash Raj</strong> (Asset Manager) — <code>yash@company.com</code></p>
-            <p>3. <strong>Fahad Hassan</strong> (Employee) — <code>fahad@company.com</code></p>
-            <p>4. <strong>Mrinal Kishor</strong> (Dept Head) — <code>mrinal@company.com</code></p>
-            <p>5. <strong>Sarah Jenkins</strong> (Employee) — <code>sarah@company.com</code></p>
-            <p>6. <strong>Amit Kumar</strong> (Employee) — <code>amit@company.com</code></p>
-            <p>7. <strong>Neha Sharma</strong> (Employee) — <code>neha@company.com</code></p>
-            <p>8. <strong>Rahul Verma</strong> (Employee) — <code>rahul@company.com</code></p>
-            <p>9. <strong>Deepa Patel</strong> (Employee) — <code>deepa@company.com</code></p>
+            <p>1. <strong>Aadarsh Nath</strong> (Admin) — <code>aadarsh@company.com</code> | <code>admin123</code></p>
+            <p>2. <strong>Yash Raj</strong> (Asset Manager) — <code>yash@company.com</code> | <code>employee123</code></p>
+            <p>3. <strong>Fahad Hassan</strong> (Employee) — <code>fahad@company.com</code> | <code>employee123</code></p>
+            <p>4. <strong>Mrinal Kishor</strong> (Dept Head) — <code>mrinal@company.com</code> | <code>employee123</code></p>
+            <p>5. <strong>Sarah Jenkins</strong> (Employee) — <code>sarah@company.com</code> | <code>employee123</code></p>
+            <p>6. <strong>Amit Kumar</strong> (Employee) — <code>amit@company.com</code> | <code>employee123</code></p>
+            <p>7. <strong>Neha Sharma</strong> (Employee) — <code>neha@company.com</code> | <code>employee123</code></p>
+            <p>8. <strong>Rahul Verma</strong> (Employee) — <code>rahul@company.com</code> | <code>employee123</code></p>
+            <p>9. <strong>Deepa Patel</strong> (Employee) — <code>deepa@company.com</code> | <code>employee123</code></p>
           </div>
         </div>
 

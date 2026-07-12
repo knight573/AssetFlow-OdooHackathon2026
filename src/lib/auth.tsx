@@ -132,7 +132,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error("No profile found with this email. Please sign up first.");
       }
       
-      const storedPassword = found.password || 'password123';
+      const storedPassword = found.password || (found.role === 'admin' ? 'admin123' : 'employee123');
       if (password && password !== storedPassword) {
         setLoading(false);
         throw new Error("Incorrect password. Please try again.");
@@ -157,7 +157,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       role: 'employee',
       status: 'active',
       created_at: new Date().toISOString(),
-      password: password || 'password123'
+      password: password || 'employee123'
     };
 
     if (isSupabaseConfigured) {

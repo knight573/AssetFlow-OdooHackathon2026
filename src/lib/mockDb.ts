@@ -40,16 +40,16 @@ const INITIAL_CATEGORIES: Category[] = [
 ];
 
 const INITIAL_PROFILES: Profile[] = [
-  { id: SEED_USER_AADARSH, name: 'Aadarsh Nath', email: 'aadarsh@company.com', department_id: SEED_DEP_ENG, role: 'admin', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
-  { id: SEED_USER_YASH, name: 'Yash Raj', email: 'yash@company.com', department_id: SEED_DEP_FAC, role: 'asset_manager', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
-  { id: SEED_USER_FAHAD, name: 'Fahad Hassan', email: 'fahad@company.com', department_id: SEED_DEP_ENG, role: 'employee', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
-  { id: SEED_USER_MRINAL, name: 'Mrinal Kishor', email: 'mrinal@company.com', department_id: SEED_DEP_ENG, role: 'department_head', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
-  { id: SEED_USER_SARAH, name: 'Sarah Jenkins', email: 'sarah@company.com', department_id: SEED_DEP_FAC, role: 'employee', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
+  { id: SEED_USER_AADARSH, name: 'Aadarsh Nath', email: 'aadarsh@company.com', department_id: SEED_DEP_ENG, role: 'admin', status: 'active', created_at: new Date().toISOString(), password: 'admin123' },
+  { id: SEED_USER_YASH, name: 'Yash Raj', email: 'yash@company.com', department_id: SEED_DEP_FAC, role: 'asset_manager', status: 'active', created_at: new Date().toISOString(), password: 'employee123' },
+  { id: SEED_USER_FAHAD, name: 'Fahad Hassan', email: 'fahad@company.com', department_id: SEED_DEP_ENG, role: 'employee', status: 'active', created_at: new Date().toISOString(), password: 'employee123' },
+  { id: SEED_USER_MRINAL, name: 'Mrinal Kishor', email: 'mrinal@company.com', department_id: SEED_DEP_ENG, role: 'department_head', status: 'active', created_at: new Date().toISOString(), password: 'employee123' },
+  { id: SEED_USER_SARAH, name: 'Sarah Jenkins', email: 'sarah@company.com', department_id: SEED_DEP_FAC, role: 'employee', status: 'active', created_at: new Date().toISOString(), password: 'employee123' },
   // 4 Additional Employees
-  { id: SEED_USER_AMIT, name: 'Amit Kumar', email: 'amit@company.com', department_id: SEED_DEP_ENG, role: 'employee', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
-  { id: SEED_USER_NEHA, name: 'Neha Sharma', email: 'neha@company.com', department_id: SEED_DEP_ENG, role: 'employee', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
-  { id: SEED_USER_RAHUL, name: 'Rahul Verma', email: 'rahul@company.com', department_id: SEED_DEP_FAC, role: 'employee', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
-  { id: SEED_USER_DEEPA, name: 'Deepa Patel', email: 'deepa@company.com', department_id: SEED_DEP_FAC, role: 'employee', status: 'active', created_at: new Date().toISOString(), password: 'password123' },
+  { id: SEED_USER_AMIT, name: 'Amit Kumar', email: 'amit@company.com', department_id: SEED_DEP_ENG, role: 'employee', status: 'active', created_at: new Date().toISOString(), password: 'employee123' },
+  { id: SEED_USER_NEHA, name: 'Neha Sharma', email: 'neha@company.com', department_id: SEED_DEP_ENG, role: 'employee', status: 'active', created_at: new Date().toISOString(), password: 'employee123' },
+  { id: SEED_USER_RAHUL, name: 'Rahul Verma', email: 'rahul@company.com', department_id: SEED_DEP_FAC, role: 'employee', status: 'active', created_at: new Date().toISOString(), password: 'employee123' },
+  { id: SEED_USER_DEEPA, name: 'Deepa Patel', email: 'deepa@company.com', department_id: SEED_DEP_FAC, role: 'employee', status: 'active', created_at: new Date().toISOString(), password: 'employee123' },
 ];
 
 const INITIAL_ASSETS: Asset[] = [
