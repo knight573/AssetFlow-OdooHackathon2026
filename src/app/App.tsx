@@ -4,8 +4,14 @@ import { ResourceBooking } from '../features/operations/ResourceBooking';
 import { MaintenanceManagement } from '../features/operations/MaintenanceManagement';
 import AssetDirectory from '../features/assets/AssetDirectory';
 import AllocationTransfer from '../features/assets/AllocationTransfer';
+import { AssetAudit } from '../features/insights/AssetAudit';
+import { Reports } from '../features/insights/Reports';
+import { ActivityLogs } from '../features/insights/ActivityLogs';
+import { Notifications } from '../features/insights/Notifications';
+import { DemoSimulator } from '../components/DemoSimulator';
 import { getMockData } from '../lib/mockDb';
 import { Asset, Booking, MaintenanceRequest, Notification, ActivityLog } from '../lib/types';
+import { ClipboardCheck, TrendingUp, History, Terminal } from 'lucide-react';
 import { 
   LayoutDashboard, Wrench, CalendarDays, ShieldCheck, 
   FolderLock, Bell, LogOut, ChevronRight, Sparkles, User, Settings,
@@ -14,7 +20,8 @@ import {
 
 export const App: React.FC = () => {
   const { profile, role, switchProfile, allProfiles, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'directory' | 'allocations' | 'booking' | 'maintenance' | 'placeholder'>('booking');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'directory' | 'allocations' | 'booking' | 'maintenance' | 'audits' | 'reports' | 'logs' | 'notifications'>('booking');
+  const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activities, setActivities] = useState<ActivityLog[]>([]);
@@ -132,20 +139,55 @@ export const App: React.FC = () => {
             Repair Kanban Board
           </button>
 
-          {/* Placeholder buttons for other teams */}
-          <div className="pt-6 border-t border-slate-950/80 mt-4 space-y-1">
+          {/* Person 4 Features (Insights) */}
+          <div className="pt-6 border-t border-slate-900 mt-4 space-y-1.5">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-4 block mb-2">
-              Other Modules
+              Governance & Insights
             </span>
+            
             <button
-              onClick={() => setActiveTab('placeholder')}
-              className="w-full flex items-center justify-between px-4 py-2.5 rounded-xl text-xs text-slate-500 hover:text-slate-300 hover:bg-slate-900/10 transition-all text-left"
+              onClick={() => setActiveTab('audits')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                activeTab === 'audits' 
+                  ? 'bg-indigo-600/10 text-indigo-400 border-l-4 border-indigo-500 font-bold' 
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900/30'
+              }`}
             >
-              <span className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4" />
-                Governance & Audit (P4)
-              </span>
-              <ChevronRight className="w-3.5 h-3.5 opacity-40" />
+              <ClipboardCheck className="w-5 h-5" />
+              Asset Audits
+            </button>
+
+            <button
+              onClick={() => setActiveTab('reports')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                activeTab === 'reports' 
+                  ? 'bg-indigo-600/10 text-indigo-400 border-l-4 border-indigo-500 font-bold' 
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900/30'
+              }`}
+            >
+              <TrendingUp className="w-5 h-5" />
+              Reports & Analytics
+            </button>
+
+            <button
+              onClick={() => setActiveTab('logs')}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                activeTab === 'logs' 
+                  ? 'bg-indigo-600/10 text-indigo-400 border-l-4 border-indigo-500 font-bold' 
+                  : 'text-slate-400 hover:text-white hover:bg-slate-900/30'
+              }`}
+            >
+              <History className="w-5 h-5" />
+              Activity Logs
+            </button>
+          </div>
+
+          <div className="px-4 pt-4">
+            <button 
+              onClick={() => setIsSimulatorOpen(true)}
+              className="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-xl font-bold text-xs text-slate-200 transition"
+            >
+              <Terminal className="h-4 w-4 text-indigo-400 animate-pulse" /> Action Simulator
             </button>
           </div>
         </nav>
@@ -351,20 +393,19 @@ export const App: React.FC = () => {
             </div>
           )}
 
-          {/* Placeholder View for non-owned tabs */}
-          {activeTab === 'placeholder' && (
-            <div className="flex flex-col items-center justify-center h-[400px] text-slate-500 space-y-4">
-              <div className="p-4 bg-indigo-950/10 border border-indigo-950/30 rounded-2xl">
-                <Settings className="w-10 h-10 text-indigo-400 animate-spin" />
-              </div>
-              <h2 className="text-xl font-bold text-white">Under Construction by Team Partners</h2>
-              <p className="text-xs text-slate-400 text-center max-w-sm">
-                This workspace is owned by Person 4. Once they commit their folders, the router links will integrate seamlessly.
-              </p>
-            </div>
-          )}
+          {/* Person 4 Features */}
+          {activeTab === 'audits' && <AssetAudit />}
+          {activeTab === 'reports' && <Reports />}
+          {activeTab === 'logs' && <ActivityLogs />}
+          {activeTab === 'notifications' && <Notifications />}
         </main>
       </div>
+
+      <DemoSimulator 
+        isOpen={isSimulatorOpen} 
+        onClose={() => setIsSimulatorOpen(false)} 
+        onTriggerRefresh={loadDashboardData}
+      />
 
     </div>
   );
