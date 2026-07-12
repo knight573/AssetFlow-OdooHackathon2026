@@ -9,9 +9,10 @@ import { Reports } from '../features/insights/Reports';
 import { ActivityLogs } from '../features/insights/ActivityLogs';
 import { Notifications } from '../features/insights/Notifications';
 import { DemoSimulator } from '../components/DemoSimulator';
+import { OrgSetup } from '../features/organization/OrgSetup';
 import { getMockData } from '../lib/mockDb';
 import { Asset, Booking, MaintenanceRequest, Notification, ActivityLog } from '../lib/types';
-import { ClipboardCheck, TrendingUp, History, Terminal } from 'lucide-react';
+import { ClipboardCheck, TrendingUp, History, Terminal, Landmark } from 'lucide-react';
 import { 
   LayoutDashboard, Wrench, CalendarDays, ShieldCheck, 
   FolderLock, Bell, LogOut, ChevronRight, Sparkles, User, Settings,
@@ -20,7 +21,7 @@ import {
 
 export const App: React.FC = () => {
   const { profile, role, switchProfile, allProfiles, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'directory' | 'allocations' | 'booking' | 'maintenance' | 'audits' | 'reports' | 'logs' | 'notifications'>('booking');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'directory' | 'allocations' | 'booking' | 'maintenance' | 'audits' | 'reports' | 'logs' | 'notifications' | 'org'>('booking');
   const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -78,7 +79,7 @@ export const App: React.FC = () => {
         </div>
 
         {/* Navigation Tabs */}
-        <nav className="flex-1 px-4 py-6 space-y-1.5">
+        <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
           <button
             onClick={() => setActiveTab('dashboard')}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
@@ -89,6 +90,18 @@ export const App: React.FC = () => {
           >
             <LayoutDashboard className="w-5 h-5" />
             Command Dashboard
+          </button>
+
+          <button
+            onClick={() => setActiveTab('org')}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+              activeTab === 'org' 
+                ? 'bg-indigo-600/10 text-indigo-400 border-l-4 border-indigo-500' 
+                : 'text-slate-400 hover:text-white hover:bg-slate-900/30'
+            }`}
+          >
+            <Landmark className="w-5 h-5" />
+            Organization Setup
           </button>
 
           <button
@@ -140,7 +153,7 @@ export const App: React.FC = () => {
           </button>
 
           {/* Person 4 Features (Insights) */}
-          <div className="pt-6 border-t border-slate-900 mt-4 space-y-1.5">
+          <div className="pt-6 border-t border-slate-900 mt-4 space-y-1.5 animate-fade-in">
             <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-4 block mb-2">
               Governance & Insights
             </span>
@@ -182,7 +195,7 @@ export const App: React.FC = () => {
             </button>
           </div>
 
-          <div className="px-4 pt-4">
+          <div className="px-4 pt-4 pb-2">
             <button 
               onClick={() => setIsSimulatorOpen(true)}
               className="w-full flex items-center justify-center gap-2 py-2.5 bg-slate-900 hover:bg-slate-850 border border-slate-800 rounded-xl font-bold text-xs text-slate-200 transition"
@@ -291,6 +304,7 @@ export const App: React.FC = () => {
           {/* Tab Route Switching */}
           {activeTab === 'booking' && <ResourceBooking />}
           {activeTab === 'maintenance' && <MaintenanceManagement />}
+          {activeTab === 'org' && <OrgSetup />}
           
           {/* Person 2 Features */}
           {activeTab === 'directory' && profile && (
