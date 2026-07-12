@@ -37,6 +37,11 @@ export interface Profile {
   password?: string;
 }
 
+export interface AssetDocument {
+  name: string;
+  url: string;
+}
+
 export interface Asset {
   id: string;
   tag: string;
@@ -52,6 +57,7 @@ export interface Asset {
   is_bookable: boolean;
   status: AssetStatus;
   created_at: string;
+  documents?: AssetDocument[] | null;
   
   // P2 Compatibility Fields
   image_url?: string;

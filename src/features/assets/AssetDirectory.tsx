@@ -19,7 +19,7 @@ import {
   Camera,
   X
 } from 'lucide-react';
-import type { Asset, Profile, Department, Category, AssetStatus, AssetCondition, Allocation } from '../../lib/types';
+import type { Asset, Profile, Department, Category, AssetStatus, AssetCondition, Allocation, AssetDocument, MaintenanceRequest } from '../../lib/types';
 import { localDb } from '../../lib/supabase';
 import { logActivity } from '../../lib/activity';
 
@@ -35,6 +35,7 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [maintenanceRequests, setMaintenanceRequests] = useState<MaintenanceRequest[]>([]);
 
   // Search & Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -56,11 +57,15 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
   const [newAssetAcquisitionDate, setNewAssetAcquisitionDate] = useState(new Date().toISOString().split('T')[0]);
   const [newAssetPhotoUrl, setNewAssetPhotoUrl] = useState('');
   const [newAssetLocation, setNewAssetLocation] = useState('');
+  const [newAssetDocs, setNewAssetDocs] = useState<AssetDocument[]>([]);
+  const [docNameInput, setDocNameInput] = useState('');
+  const [docUrlInput, setDocUrlInput] = useState('');
   const [formError, setFormError] = useState('');
 
   // Expand Asset Log History
   const [expandedAssetId, setExpandedAssetId] = useState<string | null>(null);
   const [assetHistory, setAssetHistory] = useState<any[]>([]);
+  const [activeHistoryTab, setActiveHistoryTab] = useState<'timeline' | 'allocations' | 'maintenance'>('timeline');
 
   // QR Code Scanner Simulator states
   const [showScannerModal, setShowScannerModal] = useState(false);
@@ -75,6 +80,7 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
     setProfiles(localDb.getProfiles());
     setDepartments(localDb.getDepartments());
     setCategories(localDb.getCategories());
+    setMaintenanceRequests(localDb.getMaintenanceRequests());
   };
 
   useEffect(() => {
@@ -117,8 +123,16 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
 
     const allAssets = localDb.getAssets();
     
-    // Auto-generate tag based on sequence length
-    const nextSeq = allAssets.length + 1;
+    // Auto-generate tag based on finding the highest existing tag index starting with AF-
+    let nextSeq = 1;
+    allAssets.forEach(a => {
+      if (a.tag && a.tag.startsWith('AF-')) {
+        const numPart = parseInt(a.tag.substring(3), 10);
+        if (!isNaN(numPart) && numPart >= nextSeq) {
+          nextSeq = numPart + 1;
+        }
+      }
+    });
     const nextTag = `AF-${String(nextSeq).padStart(4, '0')}`;
 
     const newAsset: Asset = {
@@ -136,6 +150,7 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
       photo_url: newAssetPhotoUrl.trim() || null,
       image_url: newAssetPhotoUrl.trim() || undefined,
       location: newAssetLocation.trim() || null,
+      documents: newAssetDocs.length > 0 ? newAssetDocs : null,
       created_at: new Date().toISOString()
     };
 
@@ -170,7 +185,9 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
     setNewAssetAcquisitionDate(new Date().toISOString().split('T')[0]);
     setNewAssetPhotoUrl('');
     setNewAssetLocation('');
-    setNewAssetLocation('');
+    setNewAssetDocs([]);
+    setDocNameInput('');
+    setDocUrlInput('');
     setShowRegisterPanel(false);
     loadData();
   };
@@ -264,11 +281,19 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
     const locationMatch = !selectedLocation || (asset.location && asset.location.toLowerCase().includes(selectedLocation.toLowerCase()));
     
     const searchLower = searchQuery.toLowerCase();
+    const catName = categories.find(c => c.id === asset.category_id)?.name || '';
+    const deptName = departments.find(d => d.id === asset.department_id)?.name || '';
+    const statusText = asset.status.replace('_', ' ');
+
     const searchMatch = !searchQuery || 
       asset.name.toLowerCase().includes(searchLower) ||
       asset.tag.toLowerCase().includes(searchLower) ||
       (asset.serial_number && asset.serial_number.toLowerCase().includes(searchLower)) ||
-      (asset.location && asset.location.toLowerCase().includes(searchLower));
+      (asset.location && asset.location.toLowerCase().includes(searchLower)) ||
+      catName.toLowerCase().includes(searchLower) ||
+      deptName.toLowerCase().includes(searchLower) ||
+      statusText.toLowerCase().includes(searchLower) ||
+      asset.status.toLowerCase().includes(searchLower);
 
     return categoryMatch && departmentMatch && statusMatch && locationMatch && searchMatch;
   });
@@ -290,10 +315,16 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
         return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Available</span>;
       case 'allocated':
         return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">Allocated</span>;
+      case 'reserved':
+        return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Reserved</span>;
       case 'under_maintenance':
         return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">Maintenance</span>;
       case 'lost':
         return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/10 text-rose-400 border border-rose-500/20">Lost</span>;
+      case 'retired':
+        return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20">Retired</span>;
+      case 'disposed':
+        return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">Disposed</span>;
       default:
         return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-500/10 text-slate-400 border border-slate-500/20">{status}</span>;
     }
@@ -487,6 +518,61 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-brand-500 transition-colors"
                   />
                 </div>
+              </div>
+
+              {/* Documents & Manuals section */}
+              <div className="border-t border-slate-800/80 pt-3 space-y-2">
+                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-wide">Documents & Manuals</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Document Name (e.g. Warranty doc)"
+                    value={docNameInput}
+                    onChange={(e) => setDocNameInput(e.target.value)}
+                    className="flex-1 min-w-0 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-brand-500 transition-colors"
+                  />
+                  <input
+                    type="url"
+                    placeholder="https://example.com/manual.pdf"
+                    value={docUrlInput}
+                    onChange={(e) => setDocUrlInput(e.target.value)}
+                    className="flex-1 min-w-0 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-brand-500 transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!docNameInput.trim() || !docUrlInput.trim()) return;
+                      setNewAssetDocs([...newAssetDocs, { name: docNameInput.trim(), url: docUrlInput.trim() }]);
+                      setDocNameInput('');
+                      setDocUrlInput('');
+                    }}
+                    className="px-3.5 py-2 bg-slate-950 hover:bg-slate-800 border border-slate-850 hover:border-slate-750 text-xs font-bold text-brand-400 hover:text-white rounded-xl transition-all"
+                  >
+                    Add
+                  </button>
+                </div>
+                
+                {newAssetDocs.length > 0 && (
+                  <div className="mt-2 p-2 bg-slate-950/50 border border-slate-850 rounded-xl max-h-24 overflow-y-auto space-y-1">
+                    {newAssetDocs.map((doc, index) => (
+                      <div key={index} className="flex items-center justify-between text-[11px] bg-slate-900 border border-slate-800 px-2 py-1 rounded-lg">
+                        <span className="text-slate-300 font-medium truncate max-w-[160px]" title={doc.name}>
+                          {doc.name}
+                        </span>
+                        <span className="text-slate-550 truncate max-w-[160px] font-mono text-[10px]" title={doc.url}>
+                          {doc.url}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setNewAssetDocs(newAssetDocs.filter((_, i) => i !== index))}
+                          className="text-rose-450 hover:text-rose-350 hover:bg-rose-500/10 h-5 w-5 flex items-center justify-center rounded transition-colors"
+                        >
+                          &times;
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="pt-2">
@@ -815,8 +901,7 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
                         <tr>
                           <td colSpan={7} className="bg-slate-950 px-6 py-5 border-t border-b border-slate-850">
                             <div className="flex flex-col md:flex-row gap-6 animate-slide-down">
-                              
-                              {/* Left Panel: QR Code and Node Details */}
+                                                          {/* Left Panel: QR Code and Node Details */}
                               <div className="w-full md:w-60 bg-slate-900 border border-slate-800/80 rounded-xl p-4.5 flex flex-col items-center justify-center space-y-4 shadow-inner shrink-0 text-center">
                                 <h5 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
                                   Asset Tag QR Code
@@ -832,7 +917,7 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
                                     }}
                                   />
                                 </div>
-                                <div className="space-y-1">
+                                <div className="space-y-1 w-full">
                                   <span className="text-xs font-mono font-extrabold text-brand-300 px-2 py-0.5 rounded bg-slate-950 border border-slate-850">
                                     {asset.tag}
                                   </span>
@@ -847,86 +932,253 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
                                     </p>
                                   )}
                                   {asset.location && (
-                                    <p className="text-[10px] text-slate-400 font-medium pt-1">
+                                    <p className="text-[10px] text-slate-400 font-medium pt-1 pb-1">
                                       Location: <span className="text-slate-300 font-semibold">{asset.location}</span>
                                     </p>
+                                  )}
+                                  
+                                  {asset.documents && asset.documents.length > 0 && (
+                                    <div className="pt-2 text-left w-full border-t border-slate-800/80 space-y-1.5">
+                                      <h6 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest text-center md:text-left">
+                                        Documents
+                                      </h6>
+                                      <div className="space-y-1 max-h-24 overflow-y-auto">
+                                        {asset.documents.map((doc, idx) => (
+                                          <a 
+                                            key={idx}
+                                            href={doc.url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="block text-[11px] text-brand-400 hover:text-brand-300 hover:underline truncate text-center md:text-left font-medium"
+                                            title={doc.name}
+                                          >
+                                            📄 {doc.name}
+                                          </a>
+                                        ))}
+                                      </div>
+                                    </div>
                                   )}
                                 </div>
                               </div>
 
-                              {/* Right Panel: Audit Logs */}
-                              <div className="flex-1 text-left space-y-3.5">
-                                <h4 className="text-xs font-bold uppercase tracking-wider text-brand-400 flex items-center gap-2">
-                                  <History className="h-4 w-4" />
-                                  Asset Node Audit Trail
-                                </h4>
-                                
-                                {assetHistory.length === 0 ? (
-                                  <p className="text-xs text-slate-500 italic">No logs reported for this device.</p>
-                                ) : (
-                                  <div className="relative pl-7 border-l-2 border-slate-800/80 space-y-5 max-h-60 overflow-y-auto py-1">
-                                    {assetHistory.map((log) => {
-                                      const actorName = profiles.find(p => p.id === log.actor_id)?.name || 'System';
-                                      
-                                      // Get icon and color mapping dynamically
-                                      const getTimelineStyle = (action: string) => {
-                                        switch (action) {
-                                          case 'asset_registered':
-                                            return {
-                                              icon: <Plus className="h-3 w-3" />,
-                                              color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30'
-                                            };
-                                          case 'asset_allocated':
-                                            return {
-                                              icon: <UserCheck className="h-3 w-3" />,
-                                              color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                                            };
-                                          case 'asset_returned':
-                                            return {
-                                              icon: <RotateCcw className="h-3 w-3" />,
-                                              color: 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                                            };
-                                          case 'status_transition':
-                                            return {
-                                              icon: <HelpCircle className="h-3 w-3" />,
-                                              color: 'bg-violet-500/10 text-violet-400 border-violet-500/30'
-                                            };
-                                          default:
-                                            return {
-                                              icon: <ArrowRightLeft className="h-3 w-3" />,
-                                              color: 'bg-slate-800 text-slate-400 border-slate-700/50'
-                                            };
-                                        }
-                                      };
+                              {/* Right Panel: Tabbed history */}
+                              <div className="flex-1 text-left space-y-4 min-w-0">
+                                <div className="flex border-b border-slate-800/80">
+                                  {[
+                                    { id: 'timeline', label: 'Timeline & Audit' },
+                                    { id: 'allocations', label: 'Allocation History' },
+                                    { id: 'maintenance', label: 'Maintenance History' }
+                                  ].map(tab => (
+                                    <button
+                                      key={tab.id}
+                                      onClick={() => setActiveHistoryTab(tab.id as any)}
+                                      className={`px-4 py-2 text-xs font-bold border-b-2 transition-all cursor-pointer ${
+                                        activeHistoryTab === tab.id
+                                          ? 'border-brand-500 text-brand-400 font-extrabold'
+                                          : 'border-transparent text-slate-500 hover:text-slate-300'
+                                      }`}
+                                    >
+                                      {tab.label}
+                                    </button>
+                                  ))}
+                                </div>
 
-                                      const style = getTimelineStyle(log.action);
+                                {activeHistoryTab === 'timeline' && (
+                                  <div className="space-y-3.5 animate-fade-in">
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-brand-400 flex items-center gap-2">
+                                      <History className="h-4 w-4" />
+                                      Asset Node Audit Trail
+                                    </h4>
+                                    
+                                    {assetHistory.length === 0 ? (
+                                      <p className="text-xs text-slate-500 italic">No logs reported for this device.</p>
+                                    ) : (
+                                      <div className="relative pl-7 border-l-2 border-slate-800/80 space-y-5 max-h-60 overflow-y-auto py-1">
+                                        {assetHistory.map((log) => {
+                                          const actorName = profiles.find(p => p.id === log.actor_id)?.name || 'System';
+                                          const getTimelineStyle = (action: string) => {
+                                            switch (action) {
+                                              case 'asset_registered':
+                                                return { icon: <Plus className="h-3 w-3" />, color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30' };
+                                              case 'asset_allocated':
+                                                return { icon: <UserCheck className="h-3 w-3" />, color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' };
+                                              case 'asset_returned':
+                                                return { icon: <RotateCcw className="h-3 w-3" />, color: 'bg-amber-500/10 text-amber-400 border-amber-500/30' };
+                                              case 'status_transition':
+                                                return { icon: <HelpCircle className="h-3 w-3" />, color: 'bg-violet-500/10 text-violet-400 border-violet-500/30' };
+                                              default:
+                                                return { icon: <ArrowRightLeft className="h-3 w-3" />, color: 'bg-slate-800 text-slate-400 border-slate-700/50' };
+                                            }
+                                          };
+                                          const style = getTimelineStyle(log.action);
+                                          return (
+                                            <div key={log.id} className="text-xs relative">
+                                              <span className={`absolute -left-[38px] top-0.5 h-6 w-6 rounded-full flex items-center justify-center border ${style.color} ring-4 ring-slate-950 z-10 hover:scale-110 transition-transform`}>
+                                                {style.icon}
+                                              </span>
+                                              <div className="flex items-center justify-between text-slate-400 mb-0.5">
+                                                <span className="font-bold text-slate-200 uppercase tracking-wider text-[10px]">
+                                                  {log.action.split('_').join(' ')}
+                                                </span>
+                                                <span className="text-[10px] text-slate-550 font-mono">
+                                                  {new Date(log.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                                                </span>
+                                              </div>
+                                              <p className="text-slate-400 leading-relaxed">
+                                                Triggered by <span className="text-slate-300 font-medium">{actorName}</span>
+                                                {log.details && log.details.assignee && <> &rarr; Assigned to <span className="text-brand-300 font-bold">{log.details.assignee}</span></>}
+                                                {log.details && log.details.to_status && <> &rarr; Transitioned to <span className="text-violet-300 font-semibold">{log.details.to_status.toUpperCase()}</span></>}
+                                              </p>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
 
+                                {activeHistoryTab === 'allocations' && (
+                                  <div className="space-y-3 animate-fade-in">
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-brand-400 flex items-center gap-2">
+                                      <UserCheck className="h-4 w-4" />
+                                      Allocation History
+                                    </h4>
+                                    
+                                    {(() => {
+                                      const assetAllocations = allocations.filter(al => al.asset_id === asset.id);
+                                      if (assetAllocations.length === 0) {
+                                        return <p className="text-xs text-slate-500 italic">No allocation logs registered for this asset.</p>;
+                                      }
                                       return (
-                                        <div key={log.id} className="text-xs relative">
-                                          {/* Connecting bullet point containing visual state icon */}
-                                          <span className={`absolute -left-[38px] top-0.5 h-6 w-6 rounded-full flex items-center justify-center border ${style.color} ring-4 ring-slate-950 z-10 hover:scale-110 transition-transform`}>
-                                            {style.icon}
-                                          </span>
-                                          <div className="flex items-center justify-between text-slate-400 mb-0.5">
-                                            <span className="font-bold text-slate-200 uppercase tracking-wider text-[10px]">
-                                              {log.action.split('_').join(' ')}
-                                            </span>
-                                            <span className="text-[10px] text-slate-550 font-mono">
-                                              {new Date(log.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
-                                            </span>
-                                          </div>
-                                          <p className="text-slate-450 leading-relaxed">
-                                            Triggered by <span className="text-slate-350 font-medium">{actorName}</span>
-                                            {log.details && log.details.assignee && (
-                                              <> &rarr; Assigned to <span className="text-brand-300 font-bold">{log.details.assignee}</span></>
-                                            )}
-                                            {log.details && log.details.to_status && (
-                                              <> &rarr; Transitioned to <span className="text-violet-300 font-semibold">{log.details.to_status.toUpperCase()}</span></>
-                                            )}
-                                          </p>
+                                        <div className="overflow-x-auto border border-slate-800/80 rounded-xl bg-slate-950/40 max-h-60 overflow-y-auto">
+                                          <table className="w-full text-left text-xs border-collapse">
+                                            <thead>
+                                              <tr className="bg-slate-900/60 border-b border-slate-800 text-[10px] uppercase font-bold text-slate-400">
+                                                <th className="px-4 py-2.5">Assignee</th>
+                                                <th className="px-4 py-2.5">Date Allocated</th>
+                                                <th className="px-4 py-2.5">Expected Return</th>
+                                                <th className="px-4 py-2.5">Actual Return</th>
+                                                <th className="px-4 py-2.5">Status</th>
+                                                <th className="px-4 py-2.5">Notes</th>
+                                              </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-850/60">
+                                              {assetAllocations.map(al => {
+                                                const assignee = profiles.find(p => p.id === al.employee_id || p.id === al.profile_id);
+                                                const assigneeName = assignee ? assignee.name : 'Central / Unassigned';
+                                                
+                                                const getAllocStatusBadge = (status: string) => {
+                                                  switch (status) {
+                                                    case 'active':
+                                                      return <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-bold">Active</span>;
+                                                    case 'returned':
+                                                      return <span className="px-2 py-0.5 rounded bg-slate-500/10 text-slate-400 border border-slate-500/20 text-[9px] font-bold">Returned</span>;
+                                                    case 'overdue':
+                                                      return <span className="px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[9px] font-bold">Overdue</span>;
+                                                    default:
+                                                      return <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-[9px] font-bold">{status}</span>;
+                                                  }
+                                                };
+
+                                                return (
+                                                  <tr key={al.id} className="hover:bg-slate-900/40">
+                                                    <td className="px-4 py-2 font-medium text-slate-200">{assigneeName}</td>
+                                                    <td className="px-4 py-2 text-slate-400">{al.allocated_at ? new Date(al.allocated_at).toLocaleDateString() : 'N/A'}</td>
+                                                    <td className="px-4 py-2 text-slate-400">{al.expected_return_date || al.expected_return_at || 'N/A'}</td>
+                                                    <td className="px-4 py-2 text-slate-400">{al.returned_at ? new Date(al.returned_at).toLocaleDateString() : 'N/A'}</td>
+                                                    <td className="px-4 py-2">{getAllocStatusBadge(al.status)}</td>
+                                                    <td className="px-4 py-2 text-slate-400 max-w-[150px] truncate" title={al.notes || al.return_condition_notes || ''}>
+                                                      {al.notes || al.return_condition_notes || <span className="text-slate-650 font-mono">-</span>}
+                                                    </td>
+                                                  </tr>
+                                                );
+                                              })}
+                                            </tbody>
+                                          </table>
                                         </div>
                                       );
-                                    })}
+                                    })()}
+                                  </div>
+                                )}
+
+                                {activeHistoryTab === 'maintenance' && (
+                                  <div className="space-y-3 animate-fade-in">
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-brand-400 flex items-center gap-2">
+                                      <AlertTriangle className="h-4 w-4" />
+                                      Maintenance Logs
+                                    </h4>
+                                    
+                                    {(() => {
+                                      const assetMaintenance = maintenanceRequests.filter(mr => mr.asset_id === asset.id);
+                                      if (assetMaintenance.length === 0) {
+                                        return <p className="text-xs text-slate-500 italic">No maintenance logs registered for this asset.</p>;
+                                      }
+                                      return (
+                                        <div className="overflow-x-auto border border-slate-800/80 rounded-xl bg-slate-955/40 max-h-60 overflow-y-auto">
+                                          <table className="w-full text-left text-xs border-collapse">
+                                            <thead>
+                                              <tr className="bg-slate-900/60 border-b border-slate-800 text-[10px] uppercase font-bold text-slate-400">
+                                                <th className="px-4 py-2.5">Issue Description</th>
+                                                <th className="px-4 py-2.5">Priority</th>
+                                                <th className="px-4 py-2.5">Status</th>
+                                                <th className="px-4 py-2.5">Technician</th>
+                                                <th className="px-4 py-2.5">Date Logged</th>
+                                                <th className="px-4 py-2.5">Date Resolved</th>
+                                              </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-850/60">
+                                              {assetMaintenance.map(mr => {
+                                                const getPriorityBadge = (prio: string) => {
+                                                  switch (prio) {
+                                                    case 'low':
+                                                      return <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 text-[9px] font-bold">Low</span>;
+                                                    case 'medium':
+                                                      return <span className="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[9px] font-bold">Med</span>;
+                                                    case 'high':
+                                                      return <span className="px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-450 border border-rose-500/20 text-[9px] font-bold">High</span>;
+                                                    case 'critical':
+                                                      return <span className="px-1.5 py-0.5 rounded bg-rose-600/20 text-rose-300 border border-rose-600/30 text-[9px] font-bold animate-pulse">Critical</span>;
+                                                    default:
+                                                      return <span className="px-1.5 py-0.5 rounded bg-slate-850 text-slate-400 text-[9px] font-bold">{prio}</span>;
+                                                  }
+                                                };
+                                                
+                                                const getMaintStatusBadge = (status: string) => {
+                                                  switch (status) {
+                                                    case 'pending':
+                                                      return <span className="px-2 py-0.5 rounded bg-slate-500/10 text-slate-400 border border-slate-500/20 text-[9px] font-bold">Pending</span>;
+                                                    case 'approved':
+                                                    case 'assigned':
+                                                      return <span className="px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-[9px] font-bold">Assigned</span>;
+                                                    case 'in_progress':
+                                                      return <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-450 border border-indigo-500/20 text-[9px] font-bold">In Progress</span>;
+                                                    case 'resolved':
+                                                      return <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] font-bold">Resolved</span>;
+                                                    case 'rejected':
+                                                      return <span className="px-2 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[9px] font-bold">Rejected</span>;
+                                                    default:
+                                                      return <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-[9px] font-bold">{status}</span>;
+                                                  }
+                                                };
+
+                                                return (
+                                                  <tr key={mr.id} className="hover:bg-slate-900/40">
+                                                    <td className="px-4 py-2 font-medium text-slate-200 max-w-[180px] truncate" title={mr.issue_description || mr.details || ''}>
+                                                      {mr.issue_description || mr.details || 'N/A'}
+                                                    </td>
+                                                    <td className="px-4 py-2">{getPriorityBadge(mr.priority)}</td>
+                                                    <td className="px-4 py-2">{getMaintStatusBadge(mr.status)}</td>
+                                                    <td className="px-4 py-2 text-slate-400 font-medium">{mr.technician_name || <span className="text-slate-600 font-mono">Unassigned</span>}</td>
+                                                    <td className="px-4 py-2 text-slate-400">{mr.created_at ? new Date(mr.created_at).toLocaleDateString() : 'N/A'}</td>
+                                                    <td className="px-4 py-2 text-slate-400">{mr.resolved_at ? new Date(mr.resolved_at).toLocaleDateString() : <span className="text-slate-650 italic">Active</span>}</td>
+                                                  </tr>
+                                                );
+                                              })}
+                                            </tbody>
+                                          </table>
+                                        </div>
+                                      );
+                                    })()}
                                   </div>
                                 )}
                               </div>

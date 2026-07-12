@@ -49,6 +49,7 @@ export const localDb = {
   getTransfers: () => getStored<TransferRequest>('transfer_requests'),
   getActivityLogs: () => getStored<ActivityLog>('activity_logs'),
   getNotifications: () => getStored<Notification>('notifications'),
+  getMaintenanceRequests: () => getStored<MaintenanceRequest>('maintenance_requests'),
 
   saveAssets: (assets: Asset[]) => setStored<Asset>('assets', assets),
   saveAllocations: (allocations: Allocation[]) => setStored<Allocation>('allocations', allocations),
@@ -56,6 +57,7 @@ export const localDb = {
   saveActivityLogs: (logs: ActivityLog[]) => setStored<ActivityLog>('activity_logs', logs),
   saveNotifications: (notes: Notification[]) => setStored<Notification>('notifications', notes),
   saveProfiles: (profiles: Profile[]) => setStored<Profile>('profiles', profiles),
+  saveMaintenanceRequests: (reqs: MaintenanceRequest[]) => setStored<MaintenanceRequest>('maintenance_requests', reqs),
 };
 
 // ==========================================
