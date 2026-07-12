@@ -164,7 +164,7 @@ export const AssetAudit: React.FC = () => {
   // Calculations
   const getCycleProgress = (cycleId: string) => {
     // We calculate from items in local stateDb
-    const itemsList = stateDb.get<AuditItem>('af_audit_items').filter((i: AuditItem) => i.audit_cycle_id === cycleId);
+    const itemsList = stateDb.get<AuditItem>('audit_items').filter((i: AuditItem) => i.audit_cycle_id === cycleId);
     if (itemsList.length === 0) return 0;
     const completed = itemsList.filter((i: AuditItem) => i.verification_status !== 'pending').length;
     return Math.round((completed / itemsList.length) * 100);
@@ -194,7 +194,7 @@ export const AssetAudit: React.FC = () => {
   const isUserAuditor = (cycle: AuditCycle) => {
     if (!profile) return false;
     if (profile.role === 'admin' || profile.role === 'asset_manager') return true;
-    const auditorsList = stateDb.get<AuditAuditor>('af_audit_auditors').filter((a: AuditAuditor) => a.audit_cycle_id === cycle.id);
+    const auditorsList = stateDb.get<AuditAuditor>('audit_auditors').filter((a: AuditAuditor) => a.audit_cycle_id === cycle.id);
     return auditorsList.some((a: AuditAuditor) => a.auditor_id === profile.id);
   };
 
