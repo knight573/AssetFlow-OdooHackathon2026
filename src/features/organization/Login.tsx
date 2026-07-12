@@ -285,11 +285,11 @@ export const Login: React.FC = () => {
           </div>
           <div className="text-[9px] text-slate-400 leading-normal space-y-0.5 max-h-40 overflow-y-auto">
             <p>1. <strong>Aadarsh Nath</strong> (Admin) — <code>aadarsh@company.com</code> | <code>admin123</code></p>
-            <p>2. <strong>Yash Raj</strong> (Asset Manager) — <code>yash@company.com</code> | <code>employee123</code></p>
-            <p>3. <strong>Fahad Hassan</strong> (Employee) — <code>fahad@company.com</code> | <code>employee123</code></p>
-            <p>4. <strong>Mrinal Kishor</strong> (Dept Head) — <code>mrinal@company.com</code> | <code>employee123</code></p>
-            <p>5. <strong>Sarah Jenkins</strong> (Employee) — <code>sarah@company.com</code> | <code>employee123</code></p>
-            <p>6. <strong>Amit Kumar</strong> (Employee) — <code>amit@company.com</code> | <code>employee123</code></p>
+            <p>2. <strong>Yash Raj</strong> (Admin) — <code>yash@company.com</code> | <code>admin123</code></p>
+            <p>3. <strong>Fahad Hassan</strong> (Admin) — <code>fahad@company.com</code> | <code>admin123</code></p>
+            <p>4. <strong>Mrinal Kishor</strong> (Admin) — <code>mrinal@company.com</code> | <code>admin123</code></p>
+            <p>5. <strong>Sarah Jenkins</strong> (Asset Mgr) — <code>sarah@company.com</code> | <code>employee123</code></p>
+            <p>6. <strong>Amit Kumar</strong> (Dept Head) — <code>amit@company.com</code> | <code>employee123</code></p>
             <p>7. <strong>Neha Sharma</strong> (Employee) — <code>neha@company.com</code> | <code>employee123</code></p>
             <p>8. <strong>Rahul Verma</strong> (Employee) — <code>rahul@company.com</code> | <code>employee123</code></p>
             <p>9. <strong>Deepa Patel</strong> (Employee) — <code>deepa@company.com</code> | <code>employee123</code></p>

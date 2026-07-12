@@ -307,11 +307,11 @@ The local database is seeded with 9 default user accounts representing various o
 | Name | Role | Email | Password |
 |------|------|-------|----------|
 | **Aadarsh Nath** | Admin | `aadarsh@company.com` | `admin123` |
-| **Yash Raj** | Asset Manager | `yash@company.com` | `employee123` |
-| **Mrinal Kishor** | Department Head | `mrinal@company.com` | `employee123` |
-| **Fahad Hassan** | Employee | `fahad@company.com` | `employee123` |
-| **Sarah Jenkins** | Employee | `sarah@company.com` | `employee123` |
-| **Amit Kumar** | Employee | `amit@company.com` | `employee123` |
+| **Yash Raj** | Admin | `yash@company.com` | `admin123` |
+| **Fahad Hassan** | Admin | `fahad@company.com` | `admin123` |
+| **Mrinal Kishor** | Admin | `mrinal@company.com` | `admin123` |
+| **Sarah Jenkins** | Asset Manager | `sarah@company.com` | `employee123` |
+| **Amit Kumar** | Department Head | `amit@company.com` | `employee123` |
 | **Neha Sharma** | Employee | `neha@company.com` | `employee123` |
 | **Rahul Verma** | Employee | `rahul@company.com` | `employee123` |
 | **Deepa Patel** | Employee | `deepa@company.com` | `employee123` |
