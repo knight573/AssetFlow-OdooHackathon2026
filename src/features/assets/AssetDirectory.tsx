@@ -49,6 +49,7 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
   const [newAssetBookable, setNewAssetBookable] = useState(false);
   const [newAssetCost, setNewAssetCost] = useState('');
   const [newAssetAcquisitionDate, setNewAssetAcquisitionDate] = useState(new Date().toISOString().split('T')[0]);
+  const [newAssetPhotoUrl, setNewAssetPhotoUrl] = useState('');
   const [formError, setFormError] = useState('');
 
   // Expand Asset Log History
@@ -120,6 +121,8 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
       condition: newAssetCondition,
       acquisition_cost: newAssetCost ? parseFloat(newAssetCost) : null,
       acquisition_date: newAssetAcquisitionDate || null,
+      photo_url: newAssetPhotoUrl.trim() || null,
+      image_url: newAssetPhotoUrl.trim() || undefined,
       created_at: new Date().toISOString()
     };
 
@@ -151,6 +154,7 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
     setNewAssetBookable(false);
     setNewAssetCost('');
     setNewAssetAcquisitionDate(new Date().toISOString().split('T')[0]);
+    setNewAssetPhotoUrl('');
     setShowRegisterPanel(false);
     loadData();
   };
@@ -387,6 +391,17 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
                 </div>
               </div>
 
+              <div>
+                <label className="block text-xs font-semibold text-slate-400 uppercase mb-1.5">Asset Image URL</label>
+                <input
+                  type="url"
+                  placeholder="e.g. https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=120"
+                  value={newAssetPhotoUrl}
+                  onChange={(e) => setNewAssetPhotoUrl(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 focus:outline-none focus:border-brand-500 transition-colors"
+                />
+              </div>
+
               <div className="pt-2">
                 <label className="flex items-center gap-3 cursor-pointer select-none">
                   <input
@@ -562,8 +577,19 @@ export default function AssetDirectory({ currentUser, onNavigateToAllocations }:
                         {/* Name / SN */}
                         <td className="px-6 py-4.5">
                           <div className="flex items-center gap-2.5">
-                            <div className="h-8.5 w-8.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 group-hover:text-brand-300 transition-colors shrink-0">
-                              <CatIcon className="h-4.5 w-4.5" />
+                            <div className="h-8.5 w-8.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center overflow-hidden shrink-0">
+                              {asset.photo_url || asset.image_url ? (
+                                <img 
+                                  src={asset.photo_url || asset.image_url} 
+                                  alt={asset.name} 
+                                  className="h-full w-full object-cover" 
+                                  onError={(e) => {
+                                    (e.target as any).style.display = 'none';
+                                  }}
+                                />
+                              ) : (
+                                <CatIcon className="h-4.5 w-4.5 text-slate-400 group-hover:text-brand-300 transition-colors" />
+                              )}
                             </div>
                             <div className="min-w-0">
                               <span className="font-semibold block truncate text-slate-200 group-hover:text-white transition-colors">{asset.name}</span>
