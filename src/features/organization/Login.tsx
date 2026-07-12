@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../../lib/auth';
 import { getMockData } from '../../lib/mockDb';
 import { Profile } from '../../lib/types';
-import { Boxes, Mail, UserPlus, LogIn, Sparkles, CheckCircle2, Lock, HelpCircle } from 'lucide-react';
+import { Boxes, Mail, UserPlus, LogIn, Sparkles, CheckCircle2, Lock, HelpCircle, Shield, User } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const { login, signup } = useAuth();
@@ -188,8 +188,57 @@ export const Login: React.FC = () => {
           </button>
         </form>
 
+        {/* Quick Simulator Logins */}
+        {mode === 'signin' && (
+          <div className="space-y-2 border-t border-slate-900 pt-4">
+            <span className="text-[10px] font-bold text-slate-500 uppercase block text-center mb-1">Quick Simulator Logins</span>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={async () => {
+                  setErrorMsg(null);
+                  setSuccessMsg(null);
+                  setLoading(true);
+                  try {
+                    await login('admin@company.com', 'password123');
+                    setSuccessMsg('Logged in as Administrator!');
+                  } catch (err: any) {
+                    setErrorMsg(err.message);
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                className="py-2.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 hover:border-rose-500/40 text-rose-450 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <Shield className="w-3.5 h-3.5" />
+                Admin Sandbox
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setErrorMsg(null);
+                  setSuccessMsg(null);
+                  setLoading(true);
+                  try {
+                    await login('priya@company.com', 'password123');
+                    setSuccessMsg('Logged in as Employee!');
+                  } catch (err: any) {
+                    setErrorMsg(err.message);
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                className="py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 hover:border-indigo-500/40 text-indigo-400 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <User className="w-3.5 h-3.5" />
+                Employee Sandbox
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Toggle Mode Switcher link */}
-        <div className="text-center pt-2 border-t border-slate-950/60 flex flex-col gap-2">
+        <div className="text-center pt-2 border-t border-slate-900 flex flex-col gap-2">
           {mode !== 'signin' && (
             <button
               onClick={() => {
@@ -206,7 +255,7 @@ export const Login: React.FC = () => {
           )}
 
           {mode === 'signin' && (
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-400 font-medium">
               New employee?{' '}
               <button
                 onClick={() => {
@@ -221,14 +270,6 @@ export const Login: React.FC = () => {
               </button>
             </p>
           )}
-        </div>
-
-        {/* Dynamic Sandbox Note */}
-        <div className="p-3 bg-indigo-950/10 border border-indigo-950/30 rounded-xl flex items-center gap-2">
-          <Sparkles className="w-4.5 h-4.5 text-indigo-400 shrink-0" />
-          <p className="text-[10px] text-slate-400 leading-normal">
-            <strong>Simulation Note:</strong> Seeded profiles (e.g. <code>sarah@company.com</code>) have a default password of <code>password123</code>.
-          </p>
         </div>
 
       </div>
