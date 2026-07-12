@@ -150,7 +150,7 @@ export const Login: React.FC = () => {
     loadDirectoryData();
   };
 
-  const handleToggleEmployeeStatus = (profileId: string, currentStatus: 'active' | 'inactive') => {
+  const handleToggleEmployeeStatus = (profileId: string, currentStatus: 'active' | 'inactive' | 'pending') => {
     const nextStatus = currentStatus === 'active' ? 'inactive' : 'active';
     const list = getMockData<Profile>('profiles');
     const updated = list.map(p => p.id === profileId ? { ...p, status: nextStatus } : p);
@@ -186,6 +186,30 @@ export const Login: React.FC = () => {
 
     setEditingId(null);
     setSuccessMsg('Employee details updated successfully!');
+    loadDirectoryData();
+  };
+
+  const handleApproveEmployee = (employeeId: string) => {
+    const list = getMockData<Profile>('profiles');
+    const updated = list.map(p => p.id === employeeId ? { ...p, status: 'active' as const } : p);
+    setMockData('profiles', updated);
+    
+    if (isSupabaseConfigured) {
+      supabase.from('profiles').update({ status: 'active' }).eq('id', employeeId).catch(console.error);
+    }
+    setSuccessMsg('Employee registration approved successfully!');
+    loadDirectoryData();
+  };
+
+  const handleRejectEmployee = (employeeId: string) => {
+    const list = getMockData<Profile>('profiles');
+    const updated = list.filter(p => p.id !== employeeId);
+    setMockData('profiles', updated);
+    
+    if (isSupabaseConfigured) {
+      supabase.from('profiles').delete().eq('id', employeeId).catch(console.error);
+    }
+    setSuccessMsg('Employee registration rejected and removed.');
     loadDirectoryData();
   };
 
@@ -282,8 +306,19 @@ export const Login: React.FC = () => {
         if (!password) {
           throw new Error('Please set a password for your account.');
         }
-        await signup(email.trim(), name.trim(), password);
-        setSuccessMsg('Account registered successfully! Welcome to AssetFlow.');
+        try {
+          await signup(email.trim(), name.trim(), password);
+          setSuccessMsg('Account registered successfully! Welcome to AssetFlow.');
+        } catch (err: any) {
+          if (err.message && err.message.startsWith("PENDING_APPROVAL:")) {
+            setSuccessMsg(err.message.replace("PENDING_APPROVAL:", ""));
+            setMode('signin');
+            setEmail(email.trim());
+            setPassword('');
+          } else {
+            throw err;
+          }
+        }
       } else if (mode === 'forgot_email') {
         if (!name.trim()) {
           throw new Error('Please enter your full name.');
@@ -520,6 +555,8 @@ export const Login: React.FC = () => {
                           <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase ${
                             emp.status === 'active' 
                               ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                              : emp.status === 'pending'
+                              ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                               : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
                           }`}>
                             {emp.status}
@@ -527,7 +564,24 @@ export const Login: React.FC = () => {
                         </td>
                         <td className="p-3.5 text-right">
                           <div className="flex items-center justify-end gap-1.5">
-                            {editingId === emp.id ? (
+                            {emp.status === 'pending' ? (
+                              <>
+                                <button
+                                  onClick={() => handleApproveEmployee(emp.id)}
+                                  className="px-2 py-0.5 bg-emerald-950 hover:bg-emerald-900 border border-emerald-900 rounded text-emerald-400 hover:text-emerald-250 transition font-bold text-[10px]"
+                                  title="Approve Candidate"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => handleRejectEmployee(emp.id)}
+                                  className="px-2 py-0.5 bg-rose-950 hover:bg-rose-900 border border-rose-900 rounded text-rose-450 hover:text-rose-250 transition font-bold text-[10px]"
+                                  title="Reject & Delete Candidate"
+                                >
+                                  Reject
+                                </button>
+                              </>
+                            ) : editingId === emp.id ? (
                               <>
                                 <button
                                   onClick={() => handleSaveEdit(emp.id)}

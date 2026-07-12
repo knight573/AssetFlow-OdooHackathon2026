@@ -138,6 +138,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error("Incorrect password. Please try again.");
       }
 
+      if (found.status === 'pending') {
+        setLoading(false);
+        throw new Error("Your account is pending administrator approval. Please contact an admin.");
+      }
+      if (found.status === 'inactive') {
+        setLoading(false);
+        throw new Error("Your account has been deactivated. Please contact an admin.");
+      }
+
       localStorage.setItem('assetflow_current_user_id', found.id);
       setUser({ id: found.id, email: found.email });
       setProfile(found);
@@ -155,7 +164,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email,
       department_id: null,
       role: 'employee',
-      status: 'active',
+      status: 'pending',
       created_at: new Date().toISOString(),
       password: password || 'employee123'
     };
@@ -175,11 +184,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       list.push(newProfile);
       setMockData('profiles', list);
-      localStorage.setItem('assetflow_current_user_id', newId);
-      setUser({ id: newId, email });
-      setProfile(newProfile);
-      setRole('employee');
       setLoading(false);
+      throw new Error("PENDING_APPROVAL: Registration successful! Your account is pending administrator approval before you can login.");
     }
   };
 
