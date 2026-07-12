@@ -12,7 +12,7 @@ import { DemoSimulator } from '../components/DemoSimulator';
 import { OrgSetup } from '../features/organization/OrgSetup';
 import { Login } from '../features/organization/Login';
 import { getMockData } from '../lib/mockDb';
-import { Asset, Booking, MaintenanceRequest, Notification, ActivityLog } from '../lib/types';
+import { Asset, Booking, MaintenanceRequest, Notification, ActivityLog, Allocation } from '../lib/types';
 import { ClipboardCheck, TrendingUp, History, Terminal, Landmark } from 'lucide-react';
 import { 
   LayoutDashboard, Wrench, CalendarDays, ShieldCheck, 
@@ -28,6 +28,7 @@ export const App: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [allocations, setAllocations] = useState<Allocation[]>([]);
 
   // Preselected parameters for linking tabs between Directory and Allocations (P2 feature integration)
   const [preselectAssetId, setPreselectAssetId] = useState<string | undefined>(undefined);
@@ -49,9 +50,11 @@ export const App: React.FC = () => {
     const nList = getMockData<Notification>('notifications');
     const aList = getMockData<ActivityLog>('activity_logs');
     const assetList = getMockData<Asset>('assets');
+    const allocationList = getMockData<Allocation>('allocations');
     setNotifications(nList);
     setActivities(aList);
     setAssets(assetList);
+    setAllocations(allocationList);
   };
 
   useEffect(() => {
@@ -81,6 +84,15 @@ export const App: React.FC = () => {
   }
 
   const unreadNotificationsCount = notifications.filter(n => !n.is_read).length;
+
+  const overdueCount = allocations.filter(a => {
+    if (a.returned_at) return false;
+    const returnDate = new Date(a.expected_return_date);
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    returnDate.setHours(0,0,0,0);
+    return returnDate < today;
+  }).length;
 
   return (
     <div className="min-h-screen flex text-slate-100 bg-[#050811]">
@@ -400,13 +412,15 @@ export const App: React.FC = () => {
               </div>
 
               {/* Overdue Banner */}
-              <div className="p-4 bg-rose-950/20 border border-rose-900/40 rounded-xl flex items-center gap-3">
-                <div className="w-2.5 h-2.5 bg-rose-500 rounded-full animate-ping" />
-                <div>
-                  <p className="text-sm font-semibold text-rose-350">3 Assets are Overdue for return</p>
-                  <p className="text-xs text-slate-400 mt-0.5">Please check expected return dates under the "Allocations & Transfers" tab to process outstanding returns.</p>
+              {overdueCount > 0 && (
+                <div className="p-4 bg-rose-950/20 border border-rose-900/40 rounded-xl flex items-center gap-3 animate-pulse-slow">
+                  <div className="w-2.5 h-2.5 bg-rose-500 rounded-full animate-ping" />
+                  <div>
+                    <p className="text-sm font-semibold text-rose-350">{overdueCount} {overdueCount === 1 ? 'Asset is' : 'Assets are'} Overdue for return</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Please check expected return dates under the "Allocations & Transfers" tab to process outstanding returns.</p>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Activity Log Feed */}
               <div className="glass-panel rounded-2xl p-6 border border-slate-900">
