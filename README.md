@@ -116,7 +116,7 @@ The **AssetFlow Portal** login screen supports:
 
 ---
 
-### Repair Kanban Board
+### Maintenance Management
 - Maintenance request portal with priority levels
 - Kanban workflow: Pending → Approved/Rejected → Technician Assigned → In Progress → Resolved
 - Automatic asset status updates (flips to Under Maintenance on approval, back to Available on resolution)
